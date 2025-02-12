@@ -32,7 +32,50 @@ This package targets .NET Standard 2.1 for maximum compatibility across:
 ## Usage
 
 ```csharp
-// Example usage will be added as features are implemented
+// Initialize EAS with your endpoint and sender
+var endpoint = SepoliaEndpointURL.Google(projectId, apiKey, loggerFactory);
+var sender = new Sender(privateKey, nonceStore);
+
+// Create schema registry instance
+var registry = new SchemaRegistryNethereum(endpoint, sender, loggerFactory);
+
+// Define and register a schema
+var schemaString = "string name, uint8 age";
+var schemaUID = SchemaRegistryNethereum.GetSchemaUID(schemaString, revocable: true, EthereumAddress.Zero);
+
+// Check if schema exists, register if it doesn't
+var schema = await registry.GetSchema(schemaUID);
+if (schema == null)
+{
+    var registeredUID = await registry.Register(schemaString, resolver: null, revocable: true);
+    Console.WriteLine($"Registered new schema with UID: {registeredUID}");
+}
+
+// Create an attestation
+var eas = new EASNethereum(endpoint, sender, loggerFactory);
+
+// Prepare attestation data
+var data = new SchemaEncoder(schemaString).AbiEncode(
+    new object[] { "Alice", 25 }
+);
+
+var requestData = new AttestationRequestData(
+    Recipient: recipientAddress,
+    ExpirationUnixTimestamp: UInt64.MaxValue,
+    Revocable: true,
+    RefUID: Hex.Zero,
+    Data: new Hex(data),
+    Value: 0
+);
+
+var attestationRequest = new AttestationRequest(
+    Schema: schemaUID.ToHexStruct(),
+    Data: requestData
+);
+
+// Submit the attestation
+var attestationUID = await eas.AttestAsync(attestationRequest);
+Console.WriteLine($"Created attestation with UID: {attestationUID}");
 ```
 
 ## Building

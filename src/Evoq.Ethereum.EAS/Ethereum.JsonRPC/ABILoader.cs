@@ -17,14 +17,17 @@ internal static class ABILoader
     /// <exception cref="FileNotFoundException">Thrown when the ABI resource cannot be found</exception>
     public static string LoadABI(string abiResourceName)
     {
-        string resourcePath = $"Evoq.ABI.{abiResourceName}.json";
+        string resourcePath = $"Evoq.Ethereum.EAS.ABI.{abiResourceName}.json";
 
         var assembly = Assembly.GetExecutingAssembly();
         using var stream = assembly.GetManifestResourceStream(resourcePath);
         if (stream == null)
         {
+            var availableResources = assembly.GetManifestResourceNames();
+            var joinedNames = string.Join("\n", availableResources);
+
             throw new FileNotFoundException(
-                $"ABI file '{resourcePath}' not found in embedded resources.\nAvailable resources:\n{string.Join("\n", assembly.GetManifestResourceNames())}");
+                $"ABI file '{resourcePath}' not found in embedded resources.\nAvailable resources ({availableResources.Length}):\n{joinedNames}");
         }
 
         using var reader = new StreamReader(stream);
