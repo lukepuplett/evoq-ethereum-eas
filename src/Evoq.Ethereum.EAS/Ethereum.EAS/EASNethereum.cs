@@ -44,6 +44,15 @@ public class EASNethereum : IAttest
     /// </summary>
     public Endpoint Endpoint { get; }
 
+    // /// <summary>
+    // /// Future - The options for the EAS.
+    // /// </summary>
+    // /// <remarks>
+    // /// This is used to override defaults when attesting, such as the fees
+    // /// and/or the contract address and ABI.
+    // /// </remarks>
+    // public AttestationOptions AttestationOptions { get; }
+
     //
 
     /// <summary>
