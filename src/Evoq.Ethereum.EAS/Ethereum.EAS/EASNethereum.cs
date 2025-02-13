@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Evoq.Blockchain;
-using Evoq.Ethereum;
 using Evoq.Ethereum.Accounts.Blockchain;
 using Evoq.Ethereum.JsonRPC;
 using Microsoft.Extensions.Logging;
@@ -10,6 +9,9 @@ using Nethereum.Web3.Accounts;
 
 namespace Evoq.Ethereum.EAS;
 
+/// <summary>
+/// A class for attesting to EAS schemas using Nethereum.
+/// </summary>
 public class EASNethereum : IAttest
 {
     private readonly Hex pk;
@@ -19,6 +21,12 @@ public class EASNethereum : IAttest
 
     //
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EASNethereum"/> class.
+    /// </summary>
+    /// <param name="endpoint">The endpoint to use for the EAS.</param>
+    /// <param name="sender">The sender to use for the EAS.</param>
+    /// <param name="loggerFactory">The logger factory to use for the EAS.</param>
     public EASNethereum(Endpoint endpoint, Sender sender, ILoggerFactory loggerFactory)
     {
         this.Endpoint = endpoint;
@@ -31,6 +39,9 @@ public class EASNethereum : IAttest
 
     //
 
+    /// <summary>
+    /// The endpoint to use for the EAS.
+    /// </summary>
     public Endpoint Endpoint { get; }
 
     //
@@ -38,10 +49,12 @@ public class EASNethereum : IAttest
     /// <summary>
     /// Attest a new attestation.
     /// </summary>
-    /// <param name="schemaUID">The UID of the schema to attest to.</param>
     /// <param name="request">The attestation data.</param>
     /// <returns>The UID of the attestation.</returns>
-    /// <exception cref="AttestationFailedException">Thrown if the attestation fails.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the private key is not set.</exception>
+    /// <exception cref="FailedToSubmitTransactionException">Thrown when the transaction fails to submit.</exception>
+    /// <exception cref="OutOfGasTransactionException">Thrown when the transaction is out of gas.</exception>
+    /// <exception cref="RevertedTransactionException">Thrown when the transaction is reverted.</exception>
     public async Task<Hex> AttestAsync(AttestationRequest request)
     {
         var schemaUID = request.Schema;

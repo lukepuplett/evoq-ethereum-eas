@@ -10,6 +10,9 @@ using Nethereum.Web3;
 
 namespace Evoq.Ethereum.EAS;
 
+/// <summary>
+/// A class for registering schemas on the EAS schema registry.
+/// </summary>
 public class SchemaRegistryNethereum
 {
     private readonly string? pk;
@@ -19,6 +22,12 @@ public class SchemaRegistryNethereum
 
     //
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SchemaRegistryNethereum"/> class.
+    /// </summary>
+    /// <param name="endpoint">The endpoint to use for the schema registry.</param>
+    /// <param name="sender">The sender to use for the schema registry.</param>
+    /// <param name="loggerFactory">The logger factory to use for the schema registry.</param>
     public SchemaRegistryNethereum(Endpoint endpoint, Sender sender, ILoggerFactory loggerFactory)
     {
         this.Endpoint = endpoint;
@@ -31,6 +40,9 @@ public class SchemaRegistryNethereum
 
     //
 
+    /// <summary>
+    /// The endpoint to use for the schema registry.
+    /// </summary>
     public Endpoint Endpoint { get; }
 
     //

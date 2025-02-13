@@ -3,8 +3,17 @@ using Evoq.Ethereum.JsonRPC;
 
 namespace Evoq.Ethereum.EAS;
 
+/// <summary>
+/// Static class for getting the addresses of the EAS and Schema Registry contracts
+/// </summary>
 public static class Contracts
 {
+    /// <summary>
+    /// Get the address of the EAS contract for a given network
+    /// </summary>
+    /// <param name="networkId">The network ID</param>
+    /// <returns>The address of the EAS contract</returns>
+    /// <exception cref="ArgumentException">Thrown when the network ID is not supported</exception>
     public static string GetEASAddress(string networkId)
     {
         switch (networkId)
@@ -60,6 +69,12 @@ public static class Contracts
         }
     }
 
+    /// <summary>
+    /// Get the address of the Schema Registry contract for a given network
+    /// </summary>
+    /// <param name="networkId">The network ID</param>
+    /// <returns>The address of the Schema Registry contract</returns>
+    /// <exception cref="ArgumentException">Thrown when the network ID is not supported</exception>
     public static string GetSchemaRegistryAddress(string networkId)
     {
         switch (networkId)
@@ -115,11 +130,23 @@ public static class Contracts
         }
     }
 
+    /// <summary>
+    /// Get the JSON ABI for the EAS contract for a given network
+    /// </summary>
+    /// <param name="networkId">The network ID</param>
+    /// <returns>The JSON ABI for the EAS contract</returns>
+    /// <exception cref="ArgumentException">Thrown when the network ID is not supported</exception>
     public static string GetEASJsonABI(string networkId)
     {
         return ABILoader.LoadABI("EAS.EAS");
     }
 
+    /// <summary>
+    /// Get the JSON ABI for the Schema Registry contract for a given network
+    /// </summary>
+    /// <param name="networkId">The network ID</param>
+    /// <returns>The JSON ABI for the Schema Registry contract</returns>
+    /// <exception cref="ArgumentException">Thrown when the network ID is not supported</exception>
     public static string GetSchemaRegistryJsonABI(string networkId)
     {
         return ABILoader.LoadABI("EAS.SchemaRegistry");
