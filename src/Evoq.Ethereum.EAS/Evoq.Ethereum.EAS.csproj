@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="7.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Evoq.Blockchain" Version="1.0.0" />
     <PackageReference Include="Evoq.Ethereum" Version="1.0.3" />
     <PackageReference Include="SimpleBase" Version="4.0.2" />
