@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Authors>Luke Puplett</Authors>
     <Description>Easy to use implementation of the Ethereum Attestation Service</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -18,7 +18,7 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="7.0.0" />
     <PackageReference Include="Evoq.Blockchain" Version="1.0.0" />
-    <PackageReference Include="Evoq.Ethereum" Version="1.0.2" />
+    <PackageReference Include="Evoq.Ethereum" Version="1.0.3" />
     <PackageReference Include="SimpleBase" Version="4.0.2" />
   </ItemGroup>
 

@@ -85,6 +85,8 @@ public class SchemaRegistryNethereum
 
         var receipt = await runner.RunTransactionAsync(contract, "register", fees, new object[] { schema, resolverAddress, revocable });
 
+        this.logger.LogDebug("Schema registered in transaction {TransactionHash}", receipt.TransactionHash);
+
         try
         {
             var registeredEvent = runner.DecodeEvent<RegisteredEventDTO>(receipt);
@@ -125,17 +127,41 @@ public class SchemaRegistryNethereum
     /// <returns>The schema record</returns>
     public async Task<ISchemaRecord?> GetSchema(byte[] uid)
     {
+        if (uid.Length != 32)
+        {
+            throw new ArgumentException("Schema UID must be 32 bytes long", nameof(uid));
+        }
+
+        var providedUid = uid.ToHexStruct();
+
+        this.logger.LogDebug("Getting schema with UID {UID}", providedUid.ToString().Substring(0, 66));
+
         var contract = this.GetContract();
         var getSchemaFunction = contract.GetFunction("getSchema");
 
-        var schema = await getSchemaFunction.CallAsync<SchemaRecordDTO>(uid);
-        if (schema == null)
+        SchemaRecordDTO? schema = null;
+
+        try
         {
-            return null;
+            schema = await getSchemaFunction.CallAsync<SchemaRecordDTO>(uid);
+
+            if (schema == null)
+            {
+                this.logger.LogDebug("Schema not found");
+
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            var message = $"Error getting schema with UID {providedUid.ToString().Substring(0, 66)}";
+
+            this.logger.LogError(ex, message);
+
+            throw new FailedToCallFunctionException(message, ex);
         }
 
         var recordUid = schema.UID.ToHexStruct();
-        var providedUid = uid.ToHexStruct();
 
         if (!recordUid.IsZeroValue() && !recordUid.ValueEquals(providedUid))
         {
@@ -163,7 +189,7 @@ public class SchemaRegistryNethereum
     /// <param name="schemaSoliditySignature">The schema 'signature' like 'uint256 number, string name'.</param>
     /// <param name="revocable">Whether the schema is revocable</param>
     /// <param name="resolver">The resolver address</param>
-    /// <returns>The schema UID</returns>
+    /// <returns>The schema UID which has length 32</returns>
     public static byte[] GetSchemaUID(string schemaSoliditySignature, bool revocable, EthereumAddress resolver)
     {
         var abiEncode = new ABIEncode();
