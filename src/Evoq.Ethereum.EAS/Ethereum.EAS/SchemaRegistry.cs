@@ -41,11 +41,11 @@ public class SchemaRegistry : IGetSchema
     /// </summary>
     /// <param name="context">The context to use for the interaction.</param>
     /// <param name="schema">The schema string (e.g. "uint256 value, string name")</param>
-    /// <param name="revocable">Whether the schema is revocable</param>
     /// <param name="resolver">The resolver address</param>
+    /// <param name="revocable">Whether the schema is revocable</param>
     /// <returns>The schema record</returns>
     public async Task<ISchemaRecord> GetSchemaAsync(
-        InteractionContext context, string schema, bool revocable, EthereumAddress? resolver = null)
+        InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
     {
         var uid = SchemaUID.FormatSchemaUID(schema, revocable, resolver.GetValueOrDefault(EthereumAddress.Zero));
 
@@ -75,15 +75,17 @@ public class SchemaRegistry : IGetSchema
     /// </summary>
     /// <param name="context">The context to use for the interaction.</param>
     /// <param name="schema">The schema string (e.g. "uint256 value, string name")</param>
-    /// <param name="revocable">Whether attestations can be revoked</param>
     /// <param name="resolver">Optional resolver contract address</param>
+    /// <param name="revocable">Whether attestations can be revoked</param>
     /// <returns>The schema UID</returns>
     public async Task<TransactionResult<Hex>> Register(
-        InteractionContext context, string schema, bool revocable, EthereumAddress? resolver = null)
+        InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
     {
-        var schemaUID = SchemaUID.FormatSchemaUID(schema, revocable, resolver.GetValueOrDefault(EthereumAddress.Zero));
         var schemaReg = GetSchemaRegistryContract(context);
-        var args = AbiKeyValues.Create(("uid", schemaUID));
+        var args = AbiKeyValues.Create(
+            ("schema", schema),
+            ("resolver", resolver.GetValueOrDefault(EthereumAddress.Zero)),
+            ("revocable", revocable));
 
         var estimate = await schemaReg.EstimateTransactionFeeAsync(
             "register", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
@@ -94,6 +96,8 @@ public class SchemaRegistry : IGetSchema
 
         var receipt = await runner.RunTransactionAsync(
             schemaReg, "register", options, args, context.CancellationToken);
+
+        var schemaUID = SchemaUID.FormatSchemaUID(schema, revocable, resolver.GetValueOrDefault(EthereumAddress.Zero));
 
         return new TransactionResult<Hex>(receipt, schemaUID);
     }

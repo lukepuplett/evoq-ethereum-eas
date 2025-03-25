@@ -27,7 +27,7 @@ public class SchemaRegistryTests
         var revocable = true;
         var resolver = EthereumAddress.Zero;
 
-        var r = await registry.Register(context, schema, revocable, resolver);
+        var r = await registry.Register(context, schema, resolver, revocable);
 
         Assert.IsTrue(r.Success);
 
