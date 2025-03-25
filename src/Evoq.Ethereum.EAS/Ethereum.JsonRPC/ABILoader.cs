@@ -15,7 +15,7 @@ internal static class ABILoader
     /// <param name="abiResourceName">Name of the ABI resource file</param>
     /// <returns>The ABI content as a string</returns>
     /// <exception cref="FileNotFoundException">Thrown when the ABI resource cannot be found</exception>
-    public static string LoadABI(string abiResourceName)
+    public static string LoadAbi(string abiResourceName)
     {
         string resourcePath = $"Evoq.Ethereum.EAS.ABI.{abiResourceName}.json";
 
@@ -40,9 +40,9 @@ internal static class ABILoader
     /// <typeparam name="T">The type to deserialize the ABI into</typeparam>
     /// <param name="abiResourceName">Name of the ABI resource file</param>
     /// <returns>The deserialized ABI object</returns>
-    public static T LoadAndParseABI<T>(string abiResourceName)
+    public static T LoadAndParseAbi<T>(string abiResourceName)
     {
-        string abiContent = LoadABI(abiResourceName);
+        string abiContent = LoadAbi(abiResourceName);
         return JsonSerializer.Deserialize<T>(abiContent)
             ?? throw new JsonException($"Failed to deserialize ABI file '{abiResourceName}'");
     }
