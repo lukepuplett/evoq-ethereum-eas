@@ -38,7 +38,10 @@ public class SchemaRegistryTests
 
     private static InteractionContext CreateContext()
     {
-        var loggerFactory = new LoggerFactory();
+        var loggerFactory = LoggerFactory.Create(
+            builder => builder.AddSimpleConsole(
+                options => options.SingleLine = true).SetMinimumLevel(LogLevel.Debug));
+
         var nonces = new InMemoryNonceStore(loggerFactory);
 
         var pkStr = Environment.GetEnvironmentVariable("Blockchain__Ethereum__Addresses__Hardhat1PrivateKey");
