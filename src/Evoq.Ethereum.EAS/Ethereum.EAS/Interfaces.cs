@@ -125,3 +125,34 @@ public interface IRevoke
     /// <returns>The transaction hash.</returns>
     Task<TransactionResult<Hex>> RevokeAsync(InteractionContext context, RevocationRequest request);
 }
+
+/// <summary>
+/// Represents semantic version information.
+/// </summary>
+/// <param name="Major">The major version number.</param>
+/// <param name="Minor">The minor version number.</param>
+/// <param name="Patch">The patch version number.</param>
+public record struct SemanticVersion(
+    int Major,
+    int Minor,
+    int Patch
+)
+{
+    /// <summary>
+    /// Gets the full version string in the format "MAJOR.MINOR.PATCH".
+    /// </summary>
+    public string Version => $"{Major}.{Minor}.{Patch}";
+}
+
+/// <summary>
+/// An interface for getting the semantic version of a contract.
+/// </summary>
+public interface IGetVersion
+{
+    /// <summary>
+    /// Get the semantic version of the contract.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <returns>The semantic version information.</returns>
+    Task<SemanticVersion> GetVersionAsync(InteractionContext context);
+}

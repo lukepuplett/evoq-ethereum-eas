@@ -1,6 +1,7 @@
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Evoq.Blockchain;
@@ -15,11 +16,8 @@ namespace Evoq.Ethereum.EAS;
 /// <summary>
 /// A client for the EAS schema registry.
 /// </summary>
-public class SchemaRegistry : IGetSchema
+public class SchemaRegistry : IGetSchema, IGetVersion
 {
-
-    //
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SchemaRegistry"/> class.
     /// </summary>
@@ -77,11 +75,6 @@ public class SchemaRegistry : IGetSchema
         var schemaReg = GetSchemaRegistryContract(context);
         var args = AbiKeyValues.Create(("uid", schemaUID));
 
-        // var result = await schemaReg.CallAsync(
-        //     "getSchema", context.Sender.SenderAccount.Address, args, context.CancellationToken);
-
-        // throw new NotImplementedException();
-
         var result = await schemaReg.CallAsync<SchemaRecordDTO>(
             "getSchema", context.Sender.SenderAccount.Address, args, context.CancellationToken);
 
@@ -132,6 +125,43 @@ public class SchemaRegistry : IGetSchema
         var computedUID = SchemaUID.FormatSchemaUID(schema, resolver.GetValueOrDefault(EthereumAddress.Zero), revocable);
 
         return new TransactionResult<Hex>(receipt, computedUID);
+    }
+
+    /// <summary>
+    /// Get the semantic version of the contract.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <returns>The semantic version information.</returns>
+    public async Task<SemanticVersion> GetVersionAsync(InteractionContext context)
+    {
+        var schemaReg = GetSchemaRegistryContract(context);
+        var result = await schemaReg.CallAsync(
+            "version",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(),
+            context.CancellationToken);
+
+        if (!result.TryFirst(out var first))
+        {
+            throw new EASException("Version not found");
+        }
+
+        if (first.Value is not string version)
+        {
+            throw new EASException("Version not found");
+        }
+
+        var parts = version.Split('.');
+
+        if (parts.Length != 3 ||
+            !int.TryParse(parts[0], out var major) ||
+            !int.TryParse(parts[1], out var minor) ||
+            !int.TryParse(parts[2], out var patch))
+        {
+            throw new EASException($"Invalid version format: {version}");
+        }
+
+        return new SemanticVersion(major, minor, patch);
     }
 
     //

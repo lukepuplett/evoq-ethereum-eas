@@ -1,13 +1,8 @@
-using System.Diagnostics;
-using System.Numerics;
-using Evoq.Blockchain;
 using Evoq.Ethereum.Chains;
 using Evoq.Ethereum.Contracts;
-using Evoq.Ethereum.Crypto;
 using Evoq.Ethereum.JsonRPC;
 using Evoq.Ethereum.Transactions;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 
 namespace Evoq.Ethereum.EAS;
 
@@ -143,13 +138,34 @@ public class SchemaRegistryTests
         }
     }
 
+    [TestMethod]
+    public async Task Test_06_GetVersion_Success()
+    {
+        InteractionContext context = CreateContext(out var logger);
+        var registry = new SchemaRegistry(registryAddress);
+
+        var version = await registry.GetVersionAsync(context);
+
+        Assert.IsNotNull(version);
+        Assert.AreEqual(1, version.Major, "Major version should be 1");
+        Assert.AreEqual(4, version.Minor, "Minor version should be 4");
+        Assert.AreEqual(0, version.Patch, "Patch version should be 0");
+        Assert.AreEqual("1.4.0", version.Version, "Version string should match");
+
+        logger.LogInformation($"Schema Registry Version: {version.Version}");
+    }
+
     //
 
     private static InteractionContext CreateContext(out ILogger logger)
     {
         var loggerFactory = LoggerFactory.Create(
-            builder => builder.AddSimpleConsole(
-                options => options.SingleLine = true).SetMinimumLevel(logLevel));
+            builder => builder.AddSimpleConsole(options =>
+            {
+                options.SingleLine = true;
+                options.IncludeScopes = true;
+
+            }).SetMinimumLevel(logLevel));
 
         logger = loggerFactory.CreateLogger<SchemaRegistryTests>();
 
