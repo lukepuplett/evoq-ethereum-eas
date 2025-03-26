@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -47,7 +48,19 @@ public class SchemaRegistry : IGetSchema
     public async Task<ISchemaRecord> GetSchemaAsync(
         InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
     {
-        var uid = SchemaUID.FormatSchemaUID(schema, revocable, resolver.GetValueOrDefault(EthereumAddress.Zero));
+        if (string.IsNullOrEmpty(schema))
+        {
+            throw new ArgumentException("Schema cannot be null or empty", nameof(schema));
+        }
+
+        // Clean up schema string - remove brackets and trim whitespace
+        schema = schema.Trim();
+        if (schema.StartsWith("(") && schema.EndsWith(")"))
+        {
+            schema = schema[1..^1];
+        }
+
+        var uid = SchemaUID.FormatSchemaUID(schema, resolver.GetValueOrDefault(EthereumAddress.Zero), revocable);
 
         return await this.GetSchemaAsync(context, uid);
     }
@@ -64,8 +77,15 @@ public class SchemaRegistry : IGetSchema
         var schemaReg = GetSchemaRegistryContract(context);
         var args = AbiKeyValues.Create(("uid", schemaUID));
 
+        // var result = await schemaReg.CallAsync(
+        //     "getSchema", context.Sender.SenderAccount.Address, args, context.CancellationToken);
+
+        // throw new NotImplementedException();
+
         var result = await schemaReg.CallAsync<SchemaRecordDTO>(
             "getSchema", context.Sender.SenderAccount.Address, args, context.CancellationToken);
+
+        result.UID = schemaUID;
 
         return result;
     }
@@ -81,6 +101,18 @@ public class SchemaRegistry : IGetSchema
     public async Task<TransactionResult<Hex>> Register(
         InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
     {
+        if (string.IsNullOrEmpty(schema))
+        {
+            throw new ArgumentException("Schema cannot be null or empty", nameof(schema));
+        }
+
+        // Clean up schema string - remove brackets and trim whitespace
+        schema = schema.Trim();
+        if (schema.StartsWith("(") && schema.EndsWith(")"))
+        {
+            schema = schema[1..^1];
+        }
+
         var schemaReg = GetSchemaRegistryContract(context);
         var args = AbiKeyValues.Create(
             ("schema", schema),
@@ -97,9 +129,9 @@ public class SchemaRegistry : IGetSchema
         var receipt = await runner.RunTransactionAsync(
             schemaReg, "register", options, args, context.CancellationToken);
 
-        var schemaUID = SchemaUID.FormatSchemaUID(schema, revocable, resolver.GetValueOrDefault(EthereumAddress.Zero));
+        var computedUID = SchemaUID.FormatSchemaUID(schema, resolver.GetValueOrDefault(EthereumAddress.Zero), revocable);
 
-        return new TransactionResult<Hex>(receipt, schemaUID);
+        return new TransactionResult<Hex>(receipt, computedUID);
     }
 
     //
