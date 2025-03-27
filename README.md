@@ -14,6 +14,9 @@ dotnet add package Evoq.Ethereum.EAS
 - Type-safe EAS primitives
 - Easy integration with existing Ethereum applications
 - Built on top of Evoq.Blockchain and Evoq.Ethereum
+- Support for both regular and delegated attestations
+- Comprehensive attestation querying and validation
+- Built-in timestamping support
 
 ## Target Frameworks
 
@@ -26,57 +29,74 @@ This package targets .NET Standard 2.1 for maximum compatibility across:
 
 ## Dependencies
 
-- Evoq.Blockchain (1.0.0)
-- Evoq.Ethereum (1.0.0)
+- Evoq.Blockchain (1.0.8)
+- Evoq.Ethereum (2.1.0)
+- System.Text.Json (8.0.5)
+- SimpleBase (4.0.2)
 
 ## Usage
 
 ```csharp
-// Initialize EAS with your endpoint and sender
-var endpoint = SepoliaEndpointURL.Google(projectId, apiKey, loggerFactory);
-var sender = new Sender(privateKey, nonceStore);
+// Initialize EAS with the contract address
+var eas = new EAS(easContractAddress);
 
-// Create schema registry instance
-var registry = new SchemaRegistryNethereum(endpoint, sender, loggerFactory);
+// Create an interaction context (example using Hardhat testnet)
+InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
-// Define and register a schema
-var schemaString = "string name, uint8 age";
-var schemaUID = SchemaRegistryNethereum.GetSchemaUID(schemaString, revocable: true, EthereumAddress.Zero);
-
-// Check if schema exists, register if it doesn't
-var schema = await registry.GetSchema(schemaUID);
-if (schema == null)
-{
-    var registeredUID = await registry.Register(schemaString, resolver: null, revocable: true);
-    Console.WriteLine($"Registered new schema with UID: {registeredUID}");
-}
-
-// Create an attestation
-var eas = new EASNethereum(endpoint, sender, loggerFactory);
+// Create a schema UID (example for a boolean schema)
+var schemaUID = SchemaUID.FormatSchemaUID("bool isAHuman", EthereumAddress.Zero, true);
 
 // Prepare attestation data
-var data = new SchemaEncoder(schemaString).AbiEncode(
-    new object[] { "Alice", 25 }
-);
-
-var requestData = new AttestationRequestData(
+var data = new AttestationRequestData(
     Recipient: recipientAddress,
-    ExpirationUnixTimestamp: UInt64.MaxValue,
+    ExpirationTime: DateTimeOffset.UtcNow.AddDays(1),
     Revocable: true,
-    RefUID: Hex.Zero,
-    Data: new Hex(data),
-    Value: 0
+    RefUID: Hex.Empty,
+    Data: Hex.Empty,
+    Value: EtherAmount.Zero
 );
 
-var attestationRequest = new AttestationRequest(
-    Schema: schemaUID.ToHexStruct(),
-    Data: requestData
-);
+// Create the attestation request
+var request = new AttestationRequest(schemaUID, data);
 
 // Submit the attestation
-var attestationUID = await eas.AttestAsync(attestationRequest);
-Console.WriteLine($"Created attestation with UID: {attestationUID}");
+var result = await eas.AttestAsync(context, request);
+
+if (result.Success)
+{
+    var attestationUID = result.Result;
+    Console.WriteLine($"Created attestation with UID: {attestationUID}");
+
+    // Retrieve the attestation
+    var attestation = await eas.GetAttestationAsync(context, attestationUID);
+    Console.WriteLine($"Retrieved attestation: {attestation}");
+}
+
+// Query attestation validity
+var isValid = await eas.IsAttestationValidAsync(context, attestationUID);
+
+// Get attestation timestamp
+var timestamp = await eas.GetTimestampAsync(context, attestationUID);
 ```
+
+## Key Features
+
+### Attestations
+- Create single and multi-attestations
+- Support for delegated attestations
+- Revocable attestations
+- Reference UIDs for linked attestations
+
+### Queries
+- Retrieve attestation details
+- Validate attestation status
+- Get attestation timestamps
+- Query schema registry
+
+### Timestamping
+- On-chain timestamping support
+- Multi-timestamping capabilities
+- Off-chain revocation support
 
 ## Building
 
