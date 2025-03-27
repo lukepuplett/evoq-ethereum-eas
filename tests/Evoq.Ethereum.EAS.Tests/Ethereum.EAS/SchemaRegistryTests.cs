@@ -1,7 +1,5 @@
 using Evoq.Ethereum.Chains;
-using Evoq.Ethereum.Contracts;
 using Evoq.Ethereum.JsonRPC;
-using Evoq.Ethereum.Transactions;
 using Microsoft.Extensions.Logging;
 
 namespace Evoq.Ethereum.EAS;
@@ -20,7 +18,7 @@ public class SchemaRegistryTests
     //
 
     [TestMethod]
-    public void Test_00_SchemaUID()
+    public void Test_0_00_SchemaUID()
     {
         var schema = $"uint256 value, string name{suffix}";
         var revocable = true;
@@ -33,11 +31,11 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_01_RegisterSchema_Initial_Success()
+    public async Task Test_0_01_RegisterSchema_Initial_Success()
     {
         var registry = new SchemaRegistry(registryAddress);
 
-        InteractionContext context = CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
 
         var schema = $"uint256 value, string name{suffix}";
         var revocable = true;
@@ -51,9 +49,9 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_02_RegisterSchema_Subsequent_AlreadyExists()
+    public async Task Test_0_02_RegisterSchema_Subsequent_AlreadyExists()
     {
-        InteractionContext context = CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name{suffix}";
@@ -75,9 +73,9 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_03_GetSchema_Existing_Success()
+    public async Task Test_0_03_GetSchema_Existing_Success()
     {
-        InteractionContext context = CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name{suffix}";
@@ -95,9 +93,9 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_04_GetSchema_Existing_Success()
+    public async Task Test_0_04_GetSchema_Existing_Success()
     {
-        InteractionContext context = CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name638785811949377690";
@@ -115,9 +113,9 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_05_RegisterSchema_Subsequent_AlreadyExists()
+    public async Task Test_0_05_RegisterSchema_Subsequent_AlreadyExists()
     {
-        InteractionContext context = CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name638785811949377690";
@@ -139,9 +137,9 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_06_GetVersion_Success()
+    public async Task Test_0_06_GetVersion_Success()
     {
-        InteractionContext context = CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
 
         var version = await registry.GetVersionAsync(context);
@@ -155,41 +153,29 @@ public class SchemaRegistryTests
         logger.LogInformation($"Schema Registry Version: {version.Version}");
     }
 
-    //
-
-    private static InteractionContext CreateContext(out ILogger logger)
+    [TestMethod]
+    public async Task Test_0_07_RegisterSchema_IsAHuman()
     {
-        var loggerFactory = LoggerFactory.Create(
-            builder => builder.AddSimpleConsole(options =>
-            {
-                options.SingleLine = true;
-                options.IncludeScopes = true;
+        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
 
-            }).SetMinimumLevel(logLevel));
+        var registry = new SchemaRegistry(registryAddress);
+        var schema = "bool isAHuman";
+        var revocable = true;
+        var resolver = EthereumAddress.Zero;
 
-        logger = loggerFactory.CreateLogger<SchemaRegistryTests>();
-
-        var pkStr = Environment.GetEnvironmentVariable("Blockchain__Ethereum__Addresses__Hardhat1PrivateKey");
-        var addrStr = Environment.GetEnvironmentVariable("Blockchain__Ethereum__Addresses__Hardhat1Address");
-        var address = EthereumAddress.Parse(addrStr!);
-
-        var endpoint = new Endpoint(ChainNames.Hardhat, ChainNames.Hardhat, "http://localhost:8545", loggerFactory);
-
-        var chain = endpoint.CreateChain();
-        var getTransactionCount = () => chain.GetTransactionCountAsync(address, "latest");
-
-        var nonces = new InMemoryNonceStore(loggerFactory, getTransactionCount);
-
-        var account = new SenderAccount(pkStr!, address);
-        var sender = new Sender(account, nonces);
-
-        var context = new InteractionContext(endpoint, sender, UseSuggestedGasOptions);
-
-        return context;
-    }
-
-    private static GasOptions UseSuggestedGasOptions(ITransactionFeeEstimate estimate)
-    {
-        return estimate.ToSuggestedGasOptions();
+        try
+        {
+            var r = await registry.Register(context, schema, resolver, revocable);
+            logger.LogInformation($"'{schema}' registered with UID: {r.Result}");
+            Assert.IsTrue(r.Success);
+        }
+        catch (JsonRpcRequestFailedException requestFailed)
+            when (requestFailed.InnerException is JsonRpcProviderErrorException error)
+        {
+            // We're okay with either success or AlreadyExists
+            Assert.IsTrue(error.JsonRpcErrorCode == -32603);
+            Assert.IsTrue(error.Message.Contains("AlreadyExists"));
+            logger.LogInformation($"'{schema}' schema already exists (as expected)");
+        }
     }
 }

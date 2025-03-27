@@ -66,7 +66,7 @@ public class RegisteredEventDTO // TODO / this needs testing in Evoq.Ethereum pa
 /// <summary>
 /// A DTO for an attestation.
 /// </summary>
-public class AttestationDTO
+public class AttestationDTO : IAttestation
 {
     /// <summary>
     /// The UID of the attestation.
@@ -109,6 +109,18 @@ public class AttestationDTO
     /// </summary>
     [AbiParameter("recipient", AbiType = AbiTypeNames.Address)]
     public EthereumAddress Recipient { get; set; } = EthereumAddress.Zero;
+
+    /// <summary>
+    /// The address that created the attestation.
+    /// </summary>
+    [AbiParameter("attester", AbiType = AbiTypeNames.Address)]
+    public EthereumAddress Attester { get; set; } = EthereumAddress.Zero;
+
+    /// <summary>
+    /// Whether the attestation can be revoked.
+    /// </summary>
+    [AbiParameter("revocable", AbiType = AbiTypeNames.Bool)]
+    public bool Revocable { get; set; }
 
     /// <summary>
     /// The data of the attestation.

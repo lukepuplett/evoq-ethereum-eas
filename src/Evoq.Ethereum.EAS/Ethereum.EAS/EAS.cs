@@ -32,14 +32,16 @@ public class EAS : IAttest, IRevoke
     /// <summary>
     /// Gets an attestation by its UID
     /// </summary>
-    public async Task<AttestationDTO> GetAttestationAsync(
+    public async Task<IAttestation> GetAttestationAsync(
         InteractionContext context, Hex uid)
     {
         var eas = GetEASContract(context);
-        var args = AbiKeyValues.Create(("uid", uid));
 
         var result = await eas.CallAsync<AttestationDTO>(
-            "getAttestation", context.Sender.SenderAccount.Address, args, context.CancellationToken);
+            "getAttestation",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(("uid", uid)),
+            context.CancellationToken);
 
         return result;
     }
@@ -47,35 +49,37 @@ public class EAS : IAttest, IRevoke
     /// <summary>
     /// Creates a new attestation
     /// </summary>
-    /// <returns>The UID of the attestation.</returns>
+    /// <returns>The transaction result containing the UID of the attestation.</returns>
     public async Task<TransactionResult<Hex>> AttestAsync(
         InteractionContext context, AttestationRequest request)
     {
         var eas = GetEASContract(context);
 
-        var data = AbiKeyValues.Create(
+        var attestationRequestData = AbiKeyValues.Create(
             ("recipient", request.Data.Recipient),
-            ("expirationTime", request.Data.ExpirationTime.ToUniversalTime().ToUnixTimeSeconds()),
+            ("expirationTime", request.Data.ExpirationTime.ToUniversalTime().ToUnixTimestamp()),
             ("revocable", request.Data.Revocable),
             ("refUID", request.Data.RefUID),
             ("data", request.Data.Data),
-            ("value", request.Data.Value)
+            ("value", request.Data.Value.WeiValue)
         );
 
-        var args = AbiKeyValues.Create(
+        var attestationRequest = AbiKeyValues.Create(
             ("schema", request.Schema),
-            ("data", data)
+            ("data", attestationRequestData)
         );
+
+        var arguments = AbiKeyValues.Create(("request", attestationRequest));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "attest", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), args, context.CancellationToken);
+            "attest", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), arguments, context.CancellationToken);
 
         var gas = context.FeeEstimateToGasOptions(estimate);
         var options = new ContractInvocationOptions(gas, request.Data.Value);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "attest", options, args, context.CancellationToken);
+            eas, "attest", options, arguments, context.CancellationToken);
 
         // Get UID from event logs
         if (!eas.TryReadEventLogsFromReceipt(receipt, "Attested", out var _, out var attested))

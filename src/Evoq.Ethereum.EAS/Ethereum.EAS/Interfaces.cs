@@ -88,9 +88,11 @@ public interface IAttest
     /// </summary>
     /// <param name="context">The interaction context.</param>
     /// <param name="request">The attestation data.</param>
-    /// <returns>The UID of the attestation.</returns>
+    /// <returns>The transaction result containing the UID of the attestation.</returns>
     Task<TransactionResult<Hex>> AttestAsync(InteractionContext context, AttestationRequest request);
 }
+
+// main revocation interfaces
 
 /// <summary>
 /// A request to revoke an attestation.
@@ -125,6 +127,66 @@ public interface IRevoke
     /// <returns>The transaction hash.</returns>
     Task<TransactionResult<Hex>> RevokeAsync(InteractionContext context, RevocationRequest request);
 }
+
+// get attestation interfaces
+
+/// <summary>
+/// Interface for reading attestation data.
+/// </summary>
+public interface IAttestation
+{
+    /// <summary>
+    /// The UID of the attestation.
+    /// </summary>
+    Hex UID { get; }
+
+    /// <summary>
+    /// The schema of the attestation.
+    /// </summary>
+    Hex Schema { get; }
+
+    /// <summary>
+    /// The time of the attestation.
+    /// </summary>
+    DateTimeOffset Time { get; }
+
+    /// <summary>
+    /// The expiration time of the attestation.
+    /// </summary>
+    DateTimeOffset ExpirationTime { get; }
+
+    /// <summary>
+    /// The revocation time of the attestation.
+    /// </summary>
+    DateTimeOffset RevocationTime { get; }
+
+    /// <summary>
+    /// The refUID of the attestation.
+    /// </summary>
+    Hex RefUID { get; }
+
+    /// <summary>
+    /// The recipient of the attestation.
+    /// </summary>
+    EthereumAddress Recipient { get; }
+
+    /// <summary>
+    /// The address that created the attestation.
+    /// </summary>
+    EthereumAddress Attester { get; }
+
+    /// <summary>
+    /// Whether the attestation can be revoked.
+    /// </summary>
+    bool Revocable { get; }
+
+    /// <summary>
+    /// The data of the attestation.
+    /// </summary>
+    byte[] Data { get; }
+}
+
+// main version interfaces
 
 /// <summary>
 /// Represents semantic version information.
