@@ -21,12 +21,10 @@ Install-Package Evoq.Ethereum.EAS
 - Type-safe EAS primitives
 - Easy integration with existing Ethereum applications
 - Built on top of Evoq.Blockchain and Evoq.Ethereum
-- Support for both regular and delegated attestations
+- Support for revocable attestations
 - Comprehensive attestation querying and validation
 - Built-in timestamping support
-- EIP-712 structured data signing support
-- Multi-attestation and revocation capabilities
-- Off-chain revocation support
+- Schema registry integration
 
 ## Target Frameworks
 
@@ -55,101 +53,95 @@ var eas = new EAS(easContractAddress);
 // Create an interaction context (example using Hardhat testnet)
 InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
-// Configure for different networks
-var mainnetContext = new InteractionContext(
-    rpcUrl: "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
-    chainId: ChainIds.Mainnet,
-    privateKey: "your-private-key" // Store securely, never commit to source control
+// For production use, you'll need to set up your own context with proper configuration
+var endpoint = new Endpoint(
+    networkName: ChainNames.Mainnet,
+    displayName: ChainNames.Mainnet,
+    url: "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
+    loggerFactory: loggerFactory
 );
+
+var chain = endpoint.CreateChain();
+var getTransactionCount = () => chain.GetTransactionCountAsync(yourAddress, "latest");
+var nonces = new InMemoryNonceStore(loggerFactory, getTransactionCount);
+
+var account = new SenderAccount(privateKey, yourAddress);
+var sender = new Sender(account, nonces);
+
+var context = new InteractionContext(endpoint, sender, UseSuggestedGasOptions);
 ```
 
 ### Understanding InteractionContext
 
-The `InteractionContext` is the core configuration object that manages your connection to the Ethereum network. It handles:
-- Network connection (RPC endpoint)
-- Chain identification
-- Account management
-- Transaction signing
-- Logging
+The `InteractionContext` is the core configuration object that manages your connection to the Ethereum network. It's composed of several key components:
+
+1. **Endpoint**: Manages the network connection and chain configuration
+2. **Sender**: Handles transaction signing and nonce management
+3. **Gas Options**: Configures how gas fees are calculated
 
 #### Creating an InteractionContext
 
-There are several ways to create an `InteractionContext`:
+There are two main approaches:
 
 1. **Using Test Context (for development)**
 ```csharp
 // Creates a context connected to a local Hardhat node
+// This handles all the setup internally using environment variables
 InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 ```
 
-2. **Manual Configuration**
+2. **Manual Configuration (for production)**
 ```csharp
-// Create with all options
-var context = new InteractionContext(
-    rpcUrl: "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
-    chainId: ChainIds.Mainnet,
-    privateKey: "your-private-key",
-    logger: logger,
-    maxRetries: 3,
-    timeout: TimeSpan.FromSeconds(30)
+// 1. Set up logging
+var loggerFactory = LoggerFactory.Create(builder => 
+    builder.AddConsole().SetMinimumLevel(LogLevel.Information)
 );
 
-// Create with minimal options (uses defaults for logger, retries, and timeout)
-var simpleContext = new InteractionContext(
-    rpcUrl: "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
-    chainId: ChainIds.Mainnet,
-    privateKey: "your-private-key"
+// 2. Create the endpoint
+var endpoint = new Endpoint(
+    networkName: ChainNames.Mainnet,
+    displayName: ChainNames.Mainnet,
+    url: "your-rpc-url",
+    loggerFactory: loggerFactory
 );
+
+// 3. Create the chain
+var chain = endpoint.CreateChain();
+
+// 4. Set up nonce management
+var getTransactionCount = () => chain.GetTransactionCountAsync(yourAddress, "latest");
+var nonces = new InMemoryNonceStore(loggerFactory, getTransactionCount);
+
+// 5. Configure the sender account
+var account = new SenderAccount(privateKey, yourAddress);
+var sender = new Sender(account, nonces);
+
+// 6. Create the context with gas options
+var context = new InteractionContext(endpoint, sender, UseSuggestedGasOptions);
+
+// Helper function for gas options
+static GasOptions UseSuggestedGasOptions(ITransactionFeeEstimate estimate)
+{
+    return estimate.ToSuggestedGasOptions();
+}
 ```
 
-3. **Using Environment Variables**
+#### Available Chain Names
+
+The library includes predefined chain names for common networks:
 ```csharp
-// Create from environment variables
-var context = InteractionContext.FromEnvironment(
-    rpcUrlEnvVar: "ETH_RPC_URL",
-    privateKeyEnvVar: "ETH_PRIVATE_KEY",
-    chainIdEnvVar: "ETH_CHAIN_ID"
-);
+ChainNames.Mainnet    // Ethereum Mainnet
+ChainNames.Goerli     // Goerli Testnet
+ChainNames.Sepolia    // Sepolia Testnet
+ChainNames.Hardhat    // Local Hardhat Network
 ```
 
-#### Available Chain IDs
+#### Environment Variables for Testing
 
-The library includes predefined chain IDs for common networks:
-```csharp
-ChainIds.Mainnet    // Ethereum Mainnet
-ChainIds.Goerli     // Goerli Testnet
-ChainIds.Sepolia    // Sepolia Testnet
-ChainIds.Hardhat    // Local Hardhat Network
-```
-
-#### Logging
-
-The context supports logging through an `ILogger` instance:
-```csharp
-// Create with custom logger
-var logger = LoggerFactory.Create(builder => 
-    builder.AddConsole().SetMinimumLevel(LogLevel.Debug)
-).CreateLogger<InteractionContext>();
-
-var context = new InteractionContext(
-    rpcUrl: "your-rpc-url",
-    chainId: ChainIds.Mainnet,
-    privateKey: "your-private-key",
-    logger: logger
-);
-```
-
-#### Error Handling and Retries
-
-The context includes built-in retry logic for network operations:
-```csharp
-var context = new InteractionContext(
-    rpcUrl: "your-rpc-url",
-    chainId: ChainIds.Mainnet,
-    privateKey: "your-private-key",
-    maxRetries: 3,                    // Number of retry attempts
-    timeout: TimeSpan.FromSeconds(30) // Timeout per operation
-);
+When using the test context, the following environment variables are required:
+```bash
+Blockchain__Ethereum__Addresses__Hardhat1PrivateKey=your-private-key
+Blockchain__Ethereum__Addresses__Hardhat1Address=your-address
 ```
 
 ### Creating Attestations
@@ -198,27 +190,20 @@ catch (Exception ex)
 
 ### Advanced Features
 
-#### Multi-Attestation
+#### Schema Registry Integration
 ```csharp
-var multiRequest = new MultiAttestationRequest[]
-{
-    new MultiAttestationRequest(schemaUID1, data1),
-    new MultiAttestationRequest(schemaUID2, data2)
-};
+// Initialize the schema registry
+var schemaRegistry = new SchemaRegistry(schemaRegistryAddress);
 
-var results = await eas.MultiAttestAsync(context, multiRequest);
-```
+// Register a new schema
+var schema = "bool isAHuman";
+var result = await schemaRegistry.Register(context, schema);
 
-#### Delegated Attestation
-```csharp
-var delegatedRequest = new DelegatedAttestationRequest(
-    schemaUID: schemaUID,
-    data: data,
-    signature: signature,
-    delegator: delegatorAddress
-);
+// Get an existing schema
+var schemaRecord = await schemaRegistry.GetSchemaAsync(context, schema);
 
-var result = await eas.AttestByDelegationAsync(context, delegatedRequest);
+// Get schema version
+var version = await schemaRegistry.GetVersionAsync(context);
 ```
 
 #### Revocation
@@ -226,10 +211,6 @@ var result = await eas.AttestByDelegationAsync(context, delegatedRequest);
 // On-chain revocation
 var revocationRequest = new RevocationRequest(attestationUID);
 await eas.RevokeAsync(context, revocationRequest);
-
-// Off-chain revocation
-var offchainData = new Hex("your-data");
-var timestamp = await eas.RevokeOffchainAsync(context, offchainData);
 ```
 
 #### Timestamping
@@ -237,17 +218,20 @@ var timestamp = await eas.RevokeOffchainAsync(context, offchainData);
 // Single timestamp
 var timestamp = await eas.TimestampAsync(context, data);
 
-// Multi-timestamp
-var timestamps = await eas.MultiTimestampAsync(context, new[] { data1, data2 });
+// Get timestamp for data
+var timestamp = await eas.GetTimestampAsync(context, data);
 ```
 
-#### EIP-712 Support
+#### Attestation Validation
 ```csharp
-// Get domain separator for EIP-712 signing
-var domainSeparator = await eas.GetDomainSeparatorAsync(context);
+// Check if an attestation is valid
+var isValid = await eas.IsAttestationValidAsync(context, attestationUID);
 
-// Get attestation type hash
-var attestTypeHash = await eas.GetAttestTypeHashAsync(context);
+// Get attestation details
+var attestation = await eas.GetAttestationAsync(context, attestationUID);
+
+// Get schema registry address
+var registryAddress = await eas.GetSchemaRegistryAsync(context);
 ```
 
 ## Security Considerations
