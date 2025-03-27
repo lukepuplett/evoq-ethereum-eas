@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Evoq.Blockchain;
@@ -14,7 +15,7 @@ namespace Evoq.Ethereum.EAS;
 /// <summary>
 /// A client for the Ethereum Attestation Service (EAS) contract.
 /// </summary>
-public class EAS : IAttest, IRevoke
+public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="EAS"/> class.
@@ -139,6 +140,215 @@ public class EAS : IAttest, IRevoke
         return new TransactionResult<Hex>(receipt, receipt.TransactionHash);
     }
 
+    /// <inheritdoc />
+    public async Task<TransactionResult<DateTimeOffset>> TimestampAsync(
+        InteractionContext context, Hex data)
+    {
+        var eas = GetEASContract(context);
+        var args = AbiKeyValues.Create(("data", data));
+
+        var estimate = await eas.EstimateTransactionFeeAsync(
+            "timestamp", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
+        var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+
+        var receipt = await runner.RunTransactionAsync(
+            eas, "timestamp", options, args, context.CancellationToken);
+
+        // Get timestamp from event logs
+        if (!eas.TryReadEventLogsFromReceipt(receipt, "Timestamped", out var timestamped, out var _))
+        {
+            throw new EASException(
+                $"The timestamp was successfully submitted as transaction {receipt.TransactionHash}, " +
+                "but the event log was not found.")
+            {
+                TransactionHash = receipt.TransactionHash,
+            };
+        }
+
+        if (!timestamped!.TryGetValue("timestamp", out var timestampValue))
+        {
+            throw new EASException(
+                $"The timestamp was successfully submitted as transaction {receipt.TransactionHash}, " +
+                "but the timestamp was not found in the event log.")
+            {
+                TransactionHash = receipt.TransactionHash,
+            };
+        }
+
+        if (timestampValue is ulong timestampUlong)
+        {
+            return new TransactionResult<DateTimeOffset>(receipt, DateTimeOffset.FromUnixTimeSeconds((long)timestampUlong));
+        }
+
+        throw new EASException(
+            $"The timestamp was successfully submitted as transaction {receipt.TransactionHash}, " +
+            $"but the timestamp '{timestampValue}' in the event could not be converted to a ulong value.")
+        {
+            TransactionHash = receipt.TransactionHash,
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<TransactionResult<DateTimeOffset>> MultiTimestampAsync(
+        InteractionContext context, Hex[] data)
+    {
+        var eas = GetEASContract(context);
+        var args = AbiKeyValues.Create(("data", data));
+
+        var estimate = await eas.EstimateTransactionFeeAsync(
+            "multiTimestamp", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
+        var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+
+        var receipt = await runner.RunTransactionAsync(
+            eas, "multiTimestamp", options, args, context.CancellationToken);
+
+        // Get timestamp from event logs
+        if (!eas.TryReadEventLogsFromReceipt(receipt, "Timestamped", out var timestamped, out var _))
+        {
+            throw new EASException(
+                $"The multi-timestamp was successfully submitted as transaction {receipt.TransactionHash}, " +
+                "but the event log was not found.")
+            {
+                TransactionHash = receipt.TransactionHash,
+            };
+        }
+
+        if (!timestamped!.TryGetValue("timestamp", out var timestampValue))
+        {
+            throw new EASException(
+                $"The multi-timestamp was successfully submitted as transaction {receipt.TransactionHash}, " +
+                "but the timestamp was not found in the event log.")
+            {
+                TransactionHash = receipt.TransactionHash,
+            };
+        }
+
+        if (timestampValue is ulong timestampUlong)
+        {
+            return new TransactionResult<DateTimeOffset>(receipt, DateTimeOffset.FromUnixTimeSeconds((long)timestampUlong));
+        }
+
+        throw new EASException(
+            $"The multi-timestamp was successfully submitted as transaction {receipt.TransactionHash}, " +
+            $"but the timestamp '{timestampValue}' in the event could not be converted to a ulong value.")
+        {
+            TransactionHash = receipt.TransactionHash,
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<DateTimeOffset> GetTimestampAsync(
+        InteractionContext context, Hex data)
+    {
+        var eas = GetEASContract(context);
+
+        var dic = await eas.CallAsync(
+            "getTimestamp",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(("data", data)),
+            context.CancellationToken);
+
+        if (dic.Count != 1)
+        {
+            throw new EASException("The call to getTimestamp returned an unexpected number of results.");
+        }
+
+        var value = dic.First().Value;
+
+        if (value == null)
+        {
+            throw new EASException("The call to getTimestamp returned an unexpected null result.");
+        }
+
+        var timestamp = (ulong)value;
+
+        return timestamp == 0
+            ? DateTimeOffset.MinValue
+            : DateTimeOffset.FromUnixTimeSeconds((long)timestamp);
+    }
+
+    /// <inheritdoc />
+    public async Task<TransactionResult<DateTimeOffset>> RevokeOffchainAsync(
+        InteractionContext context, Hex data)
+    {
+        var eas = GetEASContract(context);
+        var args = AbiKeyValues.Create(("data", data));
+
+        var estimate = await eas.EstimateTransactionFeeAsync(
+            "revokeOffchain", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
+        var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+
+        var receipt = await runner.RunTransactionAsync(
+            eas, "revokeOffchain", options, args, context.CancellationToken);
+
+        var timestamp = await GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
+        return new TransactionResult<DateTimeOffset>(receipt, timestamp);
+    }
+
+    /// <inheritdoc />
+    public async Task<TransactionResult<DateTimeOffset>> MultiRevokeOffchainAsync(
+        InteractionContext context, Hex[] data)
+    {
+        var eas = GetEASContract(context);
+        var args = AbiKeyValues.Create(("data", data));
+
+        var estimate = await eas.EstimateTransactionFeeAsync(
+            "multiRevokeOffchain", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
+        var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+
+        var receipt = await runner.RunTransactionAsync(
+            eas, "multiRevokeOffchain", options, args, context.CancellationToken);
+
+        // Get the timestamp from the first piece of data
+        var timestamp = await GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data[0]);
+        return new TransactionResult<DateTimeOffset>(receipt, timestamp);
+    }
+
+    /// <inheritdoc />
+    public async Task<DateTimeOffset> GetRevokeOffchainAsync(
+        InteractionContext context, EthereumAddress revoker, Hex data)
+    {
+        var eas = GetEASContract(context);
+
+        var dic = await eas.CallAsync(
+            "getRevokeOffchain",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(
+                ("revoker", revoker),
+                ("data", data)),
+            context.CancellationToken);
+
+        if (dic.Count != 1)
+        {
+            throw new EASException("The call to getRevokeOffchain returned an unexpected number of results.");
+        }
+
+        var value = dic.First().Value;
+
+        if (value == null)
+        {
+            throw new EASException("The call to getRevokeOffchain returned an unexpected null result.");
+        }
+
+        var timestamp = (ulong)value;
+
+        return timestamp == 0
+            ? DateTimeOffset.MinValue
+            : DateTimeOffset.FromUnixTimeSeconds((long)timestamp);
+    }
+
     // views and queries
 
     /// <summary>
@@ -188,29 +398,6 @@ public class EAS : IAttest, IRevoke
             context.CancellationToken);
 
         return result;
-    }
-
-    /// <summary>
-    /// Gets the timestamp that the specified data was timestamped with
-    /// </summary>
-    /// <param name="context">The interaction context</param>
-    /// <param name="data">The data to query</param>
-    /// <returns>The timestamp the data was timestamped with, or DateTimeOffset.MinValue if not timestamped</returns>
-    public async Task<DateTimeOffset> GetTimestampAsync(
-        InteractionContext context,
-        Hex data)
-    {
-        var eas = GetEASContract(context);
-
-        var timestamp = await eas.CallAsync<ulong>(
-            "getTimestamp",
-            context.Sender.SenderAccount.Address,
-            AbiKeyValues.Create(("data", data)),
-            context.CancellationToken);
-
-        return timestamp == 0
-            ? DateTimeOffset.MinValue
-            : DateTimeOffset.FromUnixTimeSeconds((long)timestamp);
     }
 
     //

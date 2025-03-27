@@ -211,6 +211,11 @@ var version = await schemaRegistry.GetVersionAsync(context);
 // On-chain revocation
 var revocationRequest = new RevocationRequest(attestationUID);
 await eas.RevokeAsync(context, revocationRequest);
+
+// Record a timestamp for off-chain revocation data
+// This is used to prove when a revocation was recorded
+var revocationData = new Hex("your-revocation-data");
+var timestamp = await eas.RevokeOffchainAsync(context, revocationData);
 ```
 
 #### Timestamping

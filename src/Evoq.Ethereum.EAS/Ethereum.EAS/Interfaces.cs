@@ -128,6 +128,69 @@ public interface IRevoke
     Task<TransactionResult<Hex>> RevokeAsync(InteractionContext context, RevocationRequest request);
 }
 
+// timestamping interfaces
+
+/// <summary>
+/// An interface for timestamping data on-chain.
+/// </summary>
+public interface ITimestamp
+{
+    /// <summary>
+    /// Timestamp a single piece of data on-chain.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="data">The data to timestamp.</param>
+    /// <returns>The transaction result containing the timestamp.</returns>
+    Task<TransactionResult<DateTimeOffset>> TimestampAsync(InteractionContext context, Hex data);
+
+    /// <summary>
+    /// Timestamp multiple pieces of data on-chain in a single transaction.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="data">The array of data to timestamp.</param>
+    /// <returns>The transaction result containing the timestamp.</returns>
+    Task<TransactionResult<DateTimeOffset>> MultiTimestampAsync(InteractionContext context, Hex[] data);
+
+    /// <summary>
+    /// Get the timestamp for a piece of data.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="data">The data to query.</param>
+    /// <returns>The timestamp the data was timestamped with, or DateTimeOffset.MinValue if not timestamped.</returns>
+    Task<DateTimeOffset> GetTimestampAsync(InteractionContext context, Hex data);
+}
+
+/// <summary>
+/// An interface for timestamping off-chain revocation data.
+/// </summary>
+public interface IRevokeOffchain
+{
+    /// <summary>
+    /// Timestamp a single piece of revocation data on-chain.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="data">The revocation data to timestamp.</param>
+    /// <returns>The transaction result containing the timestamp.</returns>
+    Task<TransactionResult<DateTimeOffset>> RevokeOffchainAsync(InteractionContext context, Hex data);
+
+    /// <summary>
+    /// Timestamp multiple pieces of revocation data on-chain in a single transaction.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="data">The array of revocation data to timestamp.</param>
+    /// <returns>The transaction result containing the timestamp.</returns>
+    Task<TransactionResult<DateTimeOffset>> MultiRevokeOffchainAsync(InteractionContext context, Hex[] data);
+
+    /// <summary>
+    /// Get the timestamp for a piece of revocation data.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="revoker">The address that revoked the data.</param>
+    /// <param name="data">The revocation data to query.</param>
+    /// <returns>The timestamp the data was revoked with, or DateTimeOffset.MinValue if not revoked.</returns>
+    Task<DateTimeOffset> GetRevokeOffchainAsync(InteractionContext context, EthereumAddress revoker, Hex data);
+}
+
 // get attestation interfaces
 
 /// <summary>

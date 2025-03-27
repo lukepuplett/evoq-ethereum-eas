@@ -75,10 +75,14 @@ public class EASTests
 
     // IRevoke - missing
 
+    // ITimestamp
+
+    // IRevokeOffchain
+
     // Views and queries
 
     [TestMethod]
-    public async Task Test_3_00_GetSchemaRegistry__Success()
+    public async Task Test_2_00_GetSchemaRegistry__Success()
     {
         var eas = new EAS(easAddress);
 
@@ -97,12 +101,11 @@ public class EASTests
         var eas = new EAS(easAddress);
         InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
-        // Create a random bytes32 that hasn't been timestamped
-        var randomData = new Hex(new byte[32] {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-            21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
-        });
+        // Create random data that hasn't been timestamped
+        var random = new Random();
+        var dataBytes = new byte[32];
+        random.NextBytes(dataBytes);
+        var randomData = new Hex(dataBytes);
 
         var timestamp = await eas.GetTimestampAsync(context, randomData);
 
@@ -111,5 +114,165 @@ public class EASTests
         Assert.AreEqual(DateTimeOffset.MinValue, timestamp, "Non-timestamped data should return MinValue");
     }
 
-    //
+    [TestMethod]
+    public async Task Test_3_02_Timestamp_Success()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        // Create random data to timestamp
+        var random = new Random();
+        var dataBytes = new byte[32];
+        random.NextBytes(dataBytes);
+        var data = new Hex(dataBytes);
+
+        // First verify it's not timestamped
+        var initialTimestamp = await eas.GetTimestampAsync(context, data);
+        Assert.AreEqual(DateTimeOffset.MinValue, initialTimestamp, "Data should not be timestamped initially");
+
+        // Timestamp the data
+        var result = await eas.TimestampAsync(context, data);
+        Assert.IsTrue(result.Success, "Timestamp operation should succeed");
+        Assert.IsTrue(result.Result > DateTimeOffset.MinValue, "Timestamp should be set");
+
+        // Verify the timestamp was recorded
+        var finalTimestamp = await eas.GetTimestampAsync(context, data);
+        Assert.AreEqual(result.Result, finalTimestamp, "Retrieved timestamp should match the recorded timestamp");
+    }
+
+    [TestMethod]
+    public async Task Test_3_03_MultiTimestamp_Success()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        // Create multiple random pieces of data to timestamp
+        var random = new Random();
+        var data1Bytes = new byte[32];
+        var data2Bytes = new byte[32];
+        random.NextBytes(data1Bytes);
+        random.NextBytes(data2Bytes);
+        var data1 = new Hex(data1Bytes);
+        var data2 = new Hex(data2Bytes);
+        var data = new[] { data1, data2 };
+
+        // Verify none are timestamped initially
+        foreach (var d in data)
+        {
+            var initialTimestamp = await eas.GetTimestampAsync(context, d);
+            Assert.AreEqual(DateTimeOffset.MinValue, initialTimestamp, "Data should not be timestamped initially");
+        }
+
+        // Timestamp all data
+        var result = await eas.MultiTimestampAsync(context, data);
+        Assert.IsTrue(result.Success, "Multi-timestamp operation should succeed");
+        Assert.IsTrue(result.Result > DateTimeOffset.MinValue, "Timestamp should be set");
+
+        // Verify all data was timestamped
+        foreach (var d in data)
+        {
+            var finalTimestamp = await eas.GetTimestampAsync(context, d);
+            Assert.AreEqual(result.Result, finalTimestamp, "Retrieved timestamp should match the recorded timestamp");
+        }
+    }
+
+    [TestMethod]
+    public async Task Test_3_04_RevokeOffchain_Success()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        // Create random data to revoke off-chain
+        var random = new Random();
+        var dataBytes = new byte[32];
+        random.NextBytes(dataBytes);
+        var data = new Hex(dataBytes);
+
+        // First verify it's not revoked
+        var initialTimestamp = await eas.GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
+        Assert.AreEqual(DateTimeOffset.MinValue, initialTimestamp, "Data should not be revoked initially");
+
+        // Revoke the data off-chain
+        var result = await eas.RevokeOffchainAsync(context, data);
+        Assert.IsTrue(result.Success, "Off-chain revocation should succeed");
+        Assert.IsTrue(result.Result > DateTimeOffset.MinValue, "Timestamp should be set");
+
+        // Verify the revocation was recorded
+        var finalTimestamp = await eas.GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
+        Assert.AreEqual(result.Result, finalTimestamp, "Retrieved timestamp should match the recorded timestamp");
+    }
+
+    [TestMethod]
+    public async Task Test_3_05_MultiRevokeOffchain_Success()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        // Create multiple random pieces of data to revoke off-chain
+        var random = new Random();
+        var data1Bytes = new byte[32];
+        var data2Bytes = new byte[32];
+        random.NextBytes(data1Bytes);
+        random.NextBytes(data2Bytes);
+        var data1 = new Hex(data1Bytes);
+        var data2 = new Hex(data2Bytes);
+        var data = new[] { data1, data2 };
+
+        // Verify none are revoked initially
+        foreach (var d in data)
+        {
+            var initialTimestamp = await eas.GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, d);
+            Assert.AreEqual(DateTimeOffset.MinValue, initialTimestamp, "Data should not be revoked initially");
+        }
+
+        // Revoke all data off-chain
+        var result = await eas.MultiRevokeOffchainAsync(context, data);
+        Assert.IsTrue(result.Success, "Multi off-chain revocation should succeed");
+        Assert.IsTrue(result.Result > DateTimeOffset.MinValue, "Timestamp should be set");
+
+        // Verify all data was revoked
+        foreach (var d in data)
+        {
+            var finalTimestamp = await eas.GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, d);
+            Assert.AreEqual(result.Result, finalTimestamp, "Retrieved timestamp should match the recorded timestamp");
+        }
+    }
+
+    [TestMethod]
+    public async Task Test_3_06_RevokeOffchain_DifferentRevokers_Success()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        // Create random data to revoke off-chain
+        var random = new Random();
+        var dataBytes = new byte[32];
+        random.NextBytes(dataBytes);
+        var data = new Hex(dataBytes);
+
+        // Verify data is not revoked initially
+        var initialTimestamp = await eas.GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
+        Assert.AreEqual(DateTimeOffset.MinValue, initialTimestamp, "Data should not be revoked initially");
+
+        // Revoke the data
+        var result = await eas.RevokeOffchainAsync(context, data);
+        Assert.IsTrue(result.Success, "Off-chain revocation should succeed");
+        Assert.IsTrue(result.Result > DateTimeOffset.MinValue, "Timestamp should be set");
+
+        // Verify the revocation was recorded
+        var timestamp = await eas.GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
+        Assert.AreEqual(result.Result, timestamp, "Retrieved timestamp should match the recorded timestamp");
+
+        // Attempt to revoke the same data again
+        try
+        {
+            await eas.RevokeOffchainAsync(context, data);
+            Assert.Fail("Second revocation should have failed with AlreadyRevokedOffchain error");
+        }
+        catch (JsonRpcRequestFailedException ex) when (ex.InnerException is JsonRpcProviderErrorException inner &&
+            inner.Message.Contains("AlreadyRevokedOffchain()"))
+        {
+            // Expected error
+        }
+    }
 }
