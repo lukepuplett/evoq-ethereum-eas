@@ -108,13 +108,13 @@ public class AttestationDTO : IAttestation
     /// The recipient of the attestation.
     /// </summary>
     [AbiParameter("recipient", AbiType = AbiTypeNames.Address)]
-    public EthereumAddress Recipient { get; set; } = EthereumAddress.Zero;
+    public EthereumAddress Recipient { get; set; } = EthereumAddress.Empty;
 
     /// <summary>
     /// The address that created the attestation.
     /// </summary>
     [AbiParameter("attester", AbiType = AbiTypeNames.Address)]
-    public EthereumAddress Attester { get; set; } = EthereumAddress.Zero;
+    public EthereumAddress Attester { get; set; } = EthereumAddress.Empty;
 
     /// <summary>
     /// Whether the attestation can be revoked.

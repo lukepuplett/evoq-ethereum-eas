@@ -119,13 +119,15 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
 
         var data = AbiKeyValues.Create(
             ("uid", request.Data.Uid),
-            ("value", request.Data.Value)
+            ("value", request.Data.Value.ToWei())
         );
 
-        var args = AbiKeyValues.Create(
+        var req = AbiKeyValues.Create(
             ("schema", request.Schema),
             ("data", data)
         );
+
+        var args = AbiKeyValues.Create(("request", req));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
             "revoke", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), args, context.CancellationToken);
@@ -136,6 +138,17 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
 
         var receipt = await runner.RunTransactionAsync(
             eas, "revoke", options, args, context.CancellationToken);
+
+        // Wait for the receipt and check for the Revoked event
+        if (!eas.TryReadEventLogsFromReceipt(receipt, "Revoked", out var _, out var revoked))
+        {
+            throw new EASException(
+                $"The revocation was successfully submitted as transaction {receipt.TransactionHash}, " +
+                "but the event log was not found.")
+            {
+                TransactionHash = receipt.TransactionHash,
+            };
+        }
 
         return new TransactionResult<Hex>(receipt, receipt.TransactionHash);
     }
@@ -377,10 +390,22 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var eas = GetEASContract(context);
         var args = AbiKeyValues.Create(("uid", uid));
 
-        var result = await eas.CallAsync<bool>(
+        var dic = await eas.CallAsync(
             "isAttestationValid", context.Sender.SenderAccount.Address, args, context.CancellationToken);
 
-        return result;
+        if (dic.Count != 1)
+        {
+            throw new EASException("The call to getRevokeOffchain returned an unexpected number of results.");
+        }
+
+        var value = dic.First().Value;
+
+        if (value == null)
+        {
+            throw new EASException("The call to getRevokeOffchain returned an unexpected null result.");
+        }
+
+        return (bool)value;
     }
 
     /// <summary>

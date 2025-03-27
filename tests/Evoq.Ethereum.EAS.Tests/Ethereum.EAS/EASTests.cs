@@ -17,7 +17,7 @@ public class EASTests
     static readonly EthereumAddress easAddress = Contracts.GetEASAddress(ChainIds.Hardhat);
     static readonly LogLevel logLevel = LogLevel.Information;
 
-    // IAttest
+    // IAttest and IRevoke
 
     [TestMethod]
     public async Task Test_1_00_Attest__Success()
@@ -73,13 +73,62 @@ public class EASTests
         Assert.IsTrue(attestation.Schema == schemaUID);
     }
 
-    // IRevoke - missing
+    [TestMethod]
+    public async Task Test_1_02_AttestThenRevoke_Success()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
-    // ITimestamp
+        // Create and attest
+        var schemaUID = SchemaUID.FormatSchemaUID("bool isAHuman", EthereumAddress.Zero, true);
+        var data = new AttestationRequestData(
+            Recipient: context.Sender.SenderAccount.Address,
+            ExpirationTime: DateTimeOffset.UtcNow.AddDays(1),
+            Revocable: true,
+            RefUID: Hex.Empty,
+            Data: Hex.Empty,
+            Value: EtherAmount.Zero);
 
-    // IRevokeOffchain
+        var attestResult = await eas.AttestAsync(context, new AttestationRequest(schemaUID, data));
 
-    // Views and queries
+        Assert.IsTrue(attestResult.Success, "Attestation should succeed");
+        logger.LogInformation($"Attestation UID: {attestResult.Result}");
+
+        // Get and log the attestation details
+        var attestation = await eas.GetAttestationAsync(context, attestResult.Result);
+
+        logger.LogInformation($"Attestation details: {attestation}");
+        logger.LogInformation($"Attestation schema: {attestation.Schema}");
+        logger.LogInformation($"Attestation recipient: {attestation.Recipient}");
+        logger.LogInformation($"Attestation attester: {attestation.Attester}");
+        logger.LogInformation($"Attestation revocable: {attestation.Revocable}");
+        logger.LogInformation($"Attestation expiration time: {attestation.ExpirationTime}");
+
+        // Verify attestation is valid
+        var isValid = await eas.IsAttestationValidAsync(context, attestResult.Result);
+
+        logger.LogInformation($"Is attestation valid: {isValid}");
+        Assert.IsTrue(isValid, "Attestation should be valid before revocation");
+
+        // Revoke the attestation
+        var revokeRequest = new RevocationRequest(
+            Schema: attestation.Schema,
+            Data: new RevocationRequestData(
+                Uid: attestResult.Result,
+                Value: EtherAmount.Zero));
+
+        var revokeResult = await eas.RevokeAsync(context, revokeRequest);
+
+        Assert.IsTrue(revokeResult.Success, "Revocation should succeed");
+        logger.LogInformation($"Revocation transaction hash: {revokeResult.Result}");
+
+        // Get the attestation again to check revocation time
+        attestation = await eas.GetAttestationAsync(context, attestResult.Result);
+        logger.LogInformation($"Attestation revocation time: {attestation.RevocationTime}");
+        Assert.IsTrue(attestation.RevocationTime > DateTimeOffset.MinValue, "Attestation should be marked as revoked");
+    }
+
+    // Misc
 
     [TestMethod]
     public async Task Test_2_00_GetSchemaRegistry__Success()
@@ -94,6 +143,8 @@ public class EASTests
 
         Assert.AreEqual(result, EthereumAddress.Empty); // deploy of EAS contract to Hardhat does not set the schema registry
     }
+
+    // Off chain stuff
 
     [TestMethod]
     public async Task Test_3_01_GetTimestamp_NotTimestamped_ReturnsMinValue()
