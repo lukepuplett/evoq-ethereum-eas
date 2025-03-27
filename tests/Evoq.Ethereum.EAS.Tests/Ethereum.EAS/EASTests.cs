@@ -17,14 +17,14 @@ public class EASTests
     static readonly EthereumAddress easAddress = Contracts.GetEASAddress(ChainIds.Hardhat);
     static readonly LogLevel logLevel = LogLevel.Information;
 
-    //
+    // IAttest
 
     [TestMethod]
     public async Task Test_1_00_Attest__Success()
     {
         var eas = new EAS(easAddress);
 
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var schemaUID = SchemaUID.FormatSchemaUID("bool isAHuman", EthereumAddress.Zero, true);
         var data = new AttestationRequestData(
@@ -47,7 +47,7 @@ public class EASTests
     {
         var eas = new EAS(easAddress);
 
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var schemaUID = SchemaUID.FormatSchemaUID("bool isAHuman", EthereumAddress.Zero, true);
         var data = new AttestationRequestData(
@@ -71,6 +71,44 @@ public class EASTests
         Assert.IsNotNull(attestation);
         Assert.IsTrue(attestation.UID == result.Result);
         Assert.IsTrue(attestation.Schema == schemaUID);
+    }
+
+    // IRevoke - missing
+
+    // Views and queries
+
+    [TestMethod]
+    public async Task Test_3_00_GetSchemaRegistry__Success()
+    {
+        var eas = new EAS(easAddress);
+
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        var result = await eas.GetSchemaRegistryAsync(context);
+
+        logger.LogInformation($"Schema registry: {result}");
+
+        Assert.AreEqual(result, EthereumAddress.Empty); // deploy of EAS contract to Hardhat does not set the schema registry
+    }
+
+    [TestMethod]
+    public async Task Test_3_01_GetTimestamp_NotTimestamped_ReturnsMinValue()
+    {
+        var eas = new EAS(easAddress);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+
+        // Create a random bytes32 that hasn't been timestamped
+        var randomData = new Hex(new byte[32] {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        });
+
+        var timestamp = await eas.GetTimestampAsync(context, randomData);
+
+        logger.LogInformation($"Timestamp for non-timestamped data: {timestamp}");
+
+        Assert.AreEqual(DateTimeOffset.MinValue, timestamp, "Non-timestamped data should return MinValue");
     }
 
     //

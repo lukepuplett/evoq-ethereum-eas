@@ -35,7 +35,7 @@ public class SchemaRegistryTests
     {
         var registry = new SchemaRegistry(registryAddress);
 
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var schema = $"uint256 value, string name{suffix}";
         var revocable = true;
@@ -51,7 +51,7 @@ public class SchemaRegistryTests
     [TestMethod]
     public async Task Test_0_02_RegisterSchema_Subsequent_AlreadyExists()
     {
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name{suffix}";
@@ -75,7 +75,7 @@ public class SchemaRegistryTests
     [TestMethod]
     public async Task Test_0_03_GetSchema_Existing_Success()
     {
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name{suffix}";
@@ -95,7 +95,7 @@ public class SchemaRegistryTests
     [TestMethod]
     public async Task Test_0_04_GetSchema_Existing_Success()
     {
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name638785811949377690";
@@ -115,7 +115,7 @@ public class SchemaRegistryTests
     [TestMethod]
     public async Task Test_0_05_RegisterSchema_Subsequent_AlreadyExists()
     {
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = $"uint256 value, string name638785811949377690";
@@ -139,7 +139,7 @@ public class SchemaRegistryTests
     [TestMethod]
     public async Task Test_0_06_GetVersion_Success()
     {
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
 
         var version = await registry.GetVersionAsync(context);
@@ -156,7 +156,7 @@ public class SchemaRegistryTests
     [TestMethod]
     public async Task Test_0_07_RegisterSchema_IsAHuman()
     {
-        InteractionContext context = EthereumTestContext.CreateContext(out var logger);
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
         var registry = new SchemaRegistry(registryAddress);
         var schema = "bool isAHuman";

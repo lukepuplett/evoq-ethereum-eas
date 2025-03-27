@@ -24,27 +24,14 @@ public class EAS : IAttest, IRevoke
         this.ContractAddress = contractAddress;
     }
 
+    //
+
     /// <summary>
     /// The address of the EAS contract.
     /// </summary>
     public EthereumAddress ContractAddress { get; }
 
-    /// <summary>
-    /// Gets an attestation by its UID
-    /// </summary>
-    public async Task<IAttestation> GetAttestationAsync(
-        InteractionContext context, Hex uid)
-    {
-        var eas = GetEASContract(context);
-
-        var result = await eas.CallAsync<AttestationDTO>(
-            "getAttestation",
-            context.Sender.SenderAccount.Address,
-            AbiKeyValues.Create(("uid", uid)),
-            context.CancellationToken);
-
-        return result;
-    }
+    // transactions
 
     /// <summary>
     /// Creates a new attestation
@@ -152,6 +139,25 @@ public class EAS : IAttest, IRevoke
         return new TransactionResult<Hex>(receipt, receipt.TransactionHash);
     }
 
+    // views and queries
+
+    /// <summary>
+    /// Gets an attestation by its UID
+    /// </summary>
+    public async Task<IAttestation> GetAttestationAsync(
+        InteractionContext context, Hex uid)
+    {
+        var eas = GetEASContract(context);
+
+        var result = await eas.CallAsync<AttestationDTO>(
+            "getAttestation",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(("uid", uid)),
+            context.CancellationToken);
+
+        return result;
+    }
+
     /// <summary>
     /// Checks if an attestation is valid
     /// </summary>
@@ -165,6 +171,46 @@ public class EAS : IAttest, IRevoke
             "isAttestationValid", context.Sender.SenderAccount.Address, args, context.CancellationToken);
 
         return result;
+    }
+
+    /// <summary>
+    /// Gets the address of the global schema registry
+    /// </summary>
+    /// <returns>The address of the global schema registry.</returns>
+    public async Task<EthereumAddress> GetSchemaRegistryAsync(InteractionContext context)
+    {
+        var eas = GetEASContract(context);
+
+        var result = await eas.CallAsync<EthereumAddress>(
+            "getSchemaRegistry",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(),
+            context.CancellationToken);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the timestamp that the specified data was timestamped with
+    /// </summary>
+    /// <param name="context">The interaction context</param>
+    /// <param name="data">The data to query</param>
+    /// <returns>The timestamp the data was timestamped with, or DateTimeOffset.MinValue if not timestamped</returns>
+    public async Task<DateTimeOffset> GetTimestampAsync(
+        InteractionContext context,
+        Hex data)
+    {
+        var eas = GetEASContract(context);
+
+        var timestamp = await eas.CallAsync<ulong>(
+            "getTimestamp",
+            context.Sender.SenderAccount.Address,
+            AbiKeyValues.Create(("data", data)),
+            context.CancellationToken);
+
+        return timestamp == 0
+            ? DateTimeOffset.MinValue
+            : DateTimeOffset.FromUnixTimeSeconds((long)timestamp);
     }
 
     //

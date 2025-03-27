@@ -10,7 +10,7 @@ public static class EthereumTestContext
 {
     private static readonly LogLevel DefaultLogLevel = LogLevel.Information;
 
-    public static InteractionContext CreateContext(out ILogger logger, LogLevel? logLevel = null)
+    public static InteractionContext CreateHardhatContext(out ILogger logger, LogLevel? logLevel = null)
     {
         var loggerFactory = LoggerFactory.Create(
             builder => builder.AddSimpleConsole(options =>
