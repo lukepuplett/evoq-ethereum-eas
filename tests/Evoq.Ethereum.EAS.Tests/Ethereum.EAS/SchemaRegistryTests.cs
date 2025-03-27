@@ -41,7 +41,7 @@ public class SchemaRegistryTests
         var revocable = true;
         var resolver = EthereumAddress.Zero;
 
-        var r = await registry.Register(context, schema, resolver, revocable);
+        var r = await registry.RegisterAsync(context, schema, resolver, revocable);
 
         logger.LogInformation($"'{schema}' registered with UID: {r.Result}");
 
@@ -60,7 +60,7 @@ public class SchemaRegistryTests
 
         try
         {
-            var r = await registry.Register(context, schema, resolver, revocable);
+            var r = await registry.RegisterAsync(context, schema, resolver, revocable);
 
             Assert.Fail("Expected exception");
         }
@@ -124,7 +124,7 @@ public class SchemaRegistryTests
 
         try
         {
-            var r = await registry.Register(context, schema, resolver, revocable);
+            var r = await registry.RegisterAsync(context, schema, resolver, revocable);
 
             Assert.Fail("Failed to catch expected exception");
         }
@@ -165,7 +165,7 @@ public class SchemaRegistryTests
 
         try
         {
-            var r = await registry.Register(context, schema, resolver, revocable);
+            var r = await registry.RegisterAsync(context, schema, resolver, revocable);
             logger.LogInformation($"'{schema}' registered with UID: {r.Result}");
             Assert.IsTrue(r.Success);
         }

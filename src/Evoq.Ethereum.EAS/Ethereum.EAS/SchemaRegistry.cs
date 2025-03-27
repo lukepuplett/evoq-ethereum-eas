@@ -90,7 +90,7 @@ public class SchemaRegistry : IGetSchema, IGetVersion
     /// <param name="resolver">Optional resolver contract address</param>
     /// <param name="revocable">Whether attestations can be revoked</param>
     /// <returns>The schema UID</returns>
-    public async Task<TransactionResult<Hex>> Register(
+    public async Task<TransactionResult<Hex>> RegisterAsync(
         InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
     {
         if (string.IsNullOrEmpty(schema))
