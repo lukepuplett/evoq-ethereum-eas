@@ -1,4 +1,5 @@
 using Evoq.Blockchain;
+using Evoq.Ethereum.ABI;
 using Evoq.Ethereum.Chains;
 using Evoq.Ethereum.JsonRPC;
 using Microsoft.Extensions.Logging;
@@ -22,11 +23,26 @@ public class EASTests
     [TestMethod]
     public async Task Test_1_00_Attest__Success()
     {
+        var context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var registry = new SchemaRegistry(Contracts.GetSchemaRegistryAddress(ChainIds.Hardhat));
+
+        // First try to register the schema (ignoring if it already exists)
+        var schema = "bool isAHuman";
+        try
+        {
+            var registerResult = await registry.RegisterAsync(context, schema, EthereumAddress.Zero, true);
+            logger.LogInformation($"'{schema}' registered with UID: {registerResult.Result}");
+        }
+        catch (JsonRpcRequestFailedException requestFailed)
+            when (requestFailed.InnerException is JsonRpcProviderErrorException error &&
+                  error.Message.Contains("AlreadyExists"))
+        {
+            logger.LogInformation($"'{schema}' schema already exists (as expected)");
+        }
+
         var eas = new EAS(easAddress);
 
-        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
-
-        var schemaUID = SchemaUID.FormatSchemaUID("bool isAHuman", EthereumAddress.Zero, true);
+        var schemaUID = SchemaUID.FormatSchemaUID(schema, EthereumAddress.Zero, true);
         var data = new AttestationRequestData(
             Recipient: EthereumAddress.Zero,
             ExpirationTime: DateTimeOffset.UtcNow.AddDays(1),
@@ -126,6 +142,49 @@ public class EASTests
         attestation = await eas.GetAttestationAsync(context, attestResult.Result);
         logger.LogInformation($"Attestation revocation time: {attestation.RevocationTime}");
         Assert.IsTrue(attestation.RevocationTime > DateTimeOffset.MinValue, "Attestation should be marked as revoked");
+    }
+
+    [TestMethod]
+    public async Task Test_1_03_AttestWithDetails_Success()
+    {
+        var context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var eas = new EAS(easAddress);
+        var registry = new SchemaRegistry(Contracts.GetSchemaRegistryAddress(ChainIds.Hardhat));
+
+        var suffix = DateTimeOffset.UtcNow.Ticks.ToString();
+        var schemaStr = $"uint8 age, string name, bool isVerified{suffix}";
+        var schemaRequest = new SchemaRegistrationRequest(schemaStr, EthereumAddress.Zero, true);
+
+        var registerResult = await registry.RegisterAsync(context, schemaRequest);
+
+        logger.LogInformation($"Schema registered with UID: {registerResult.Result}");
+        Assert.IsTrue(registerResult.Success, "Schema registration should succeed");
+
+        var keyValues = AbiKeyValues.Create(
+            ("age", (byte)25),
+            ("name", "John Doe"),
+            ($"isVerified{suffix}", true)
+        );
+
+        // Use the extension method to create the attestation
+        var attestResult = await eas.AttestAsync(
+            context,
+            schemaRequest,
+            recipient: context.Sender.SenderAccount.Address,
+            data: keyValues,
+            revocable: true,
+            expirationTime: DateTimeOffset.UtcNow.AddDays(30)
+        );
+
+        logger.LogInformation($"Attestation UID: {attestResult.Result}");
+        Assert.IsTrue(attestResult.Success, "Attestation should succeed");
+
+        // Verify the attestation exists
+        var attestation = await eas.GetAttestationAsync(context, attestResult.Result);
+
+        Assert.IsNotNull(attestation, "Attestation should exist");
+        Assert.AreEqual(attestResult.Result, attestation.UID, "UIDs should match");
+        Assert.AreEqual(context.Sender.SenderAccount.Address, attestation.Recipient, "Recipients should match");
     }
 
     // Misc

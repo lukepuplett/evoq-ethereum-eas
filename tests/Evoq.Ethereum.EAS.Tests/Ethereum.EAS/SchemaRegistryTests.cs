@@ -12,8 +12,8 @@ public class SchemaRegistryTests
     // contract addresses are a hash of the sender and the transaction nonce.
 
     static readonly EthereumAddress registryAddress = Contracts.GetSchemaRegistryAddress(ChainIds.Hardhat);
-    static readonly string suffix = DateTimeOffset.UtcNow.Ticks.ToString();
     static readonly LogLevel logLevel = LogLevel.Information;
+    static readonly string suffix = DateTimeOffset.UtcNow.Ticks.ToString();
 
     //
 
