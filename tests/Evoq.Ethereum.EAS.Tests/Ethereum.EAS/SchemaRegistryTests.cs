@@ -1,3 +1,4 @@
+using Evoq.Blockchain;
 using Evoq.Ethereum.Chains;
 using Evoq.Ethereum.JsonRPC;
 using Microsoft.Extensions.Logging;
@@ -177,5 +178,108 @@ public class SchemaRegistryTests
             Assert.IsTrue(error.Message.Contains("AlreadyExists"));
             logger.LogInformation($"'{schema}' schema already exists (as expected)");
         }
+    }
+
+    [TestMethod]
+    public async Task Test_0_08_GetSchema_Unregistered_ReturnsNull()
+    {
+        var context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var registry = new SchemaRegistry(registryAddress);
+
+        // Create a random schema that hasn't been registered
+        var randomSuffix = Guid.NewGuid().ToString("N");
+        var schema = $"uint256 randomValue, string randomName{randomSuffix}";
+        var revocable = true;
+        var resolver = EthereumAddress.Zero;
+
+        var result = await registry.GetSchemaAsync(context, schema, resolver, revocable);
+
+        Assert.IsTrue(result.UID.IsEmpty() || result.UID.IsZeroValue(), "UID should be empty or zero");
+
+        logger.LogInformation($"Successfully verified that unregistered schema '{schema}' returns null");
+    }
+
+    [TestMethod]
+    public async Task Test_0_09_TryGetSchema_Existing_Success()
+    {
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var registry = new SchemaRegistry(registryAddress);
+
+        // Use a schema we know exists from previous tests
+        var schema = $"uint256 value, string name{suffix}";
+        var revocable = true;
+        var resolver = EthereumAddress.Zero;
+
+        var (record, wasFound) = await registry.TryGetSchemaAsync(context, schema, resolver, revocable);
+
+        Assert.IsTrue(wasFound, "Schema should be found");
+        Assert.IsNotNull(record, "Record should not be null");
+        Assert.AreEqual(schema, record.Schema, "Schema should match");
+        Assert.AreEqual(resolver, record.Resolver, "Resolver should match");
+        Assert.AreEqual(revocable, record.Revocable, "Revocable should match");
+
+        logger.LogInformation($"Successfully found schema '{schema}' with UID: {record.UID}");
+    }
+
+    [TestMethod]
+    public async Task Test_0_10_TryGetSchema_Unregistered_ReturnsFalse()
+    {
+        var context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var registry = new SchemaRegistry(registryAddress);
+
+        // Create a random schema that hasn't been registered
+        var randomSuffix = Guid.NewGuid().ToString("N");
+        var schema = $"uint256 randomValue, string randomName{randomSuffix}";
+        var revocable = true;
+        var resolver = EthereumAddress.Zero;
+
+        var (record, wasFound) = await registry.TryGetSchemaAsync(context, schema, resolver, revocable);
+
+        Assert.IsFalse(wasFound, "Schema should not be found");
+        Assert.IsNotNull(record, "Record should not be null even when not found");
+        Assert.IsTrue(record.UID.IsEmpty() || record.UID.IsZeroValue(), "UID should be empty or zero for non-existent schema");
+
+        logger.LogInformation($"Successfully verified that unregistered schema '{schema}' returns wasFound=false");
+    }
+
+    [TestMethod]
+    public async Task Test_0_11_TryGetSchemaByUID_Existing_Success()
+    {
+        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var registry = new SchemaRegistry(registryAddress);
+
+        // Use a schema we know exists and get its UID
+        var schema = $"uint256 value, string name{suffix}";
+        var revocable = true;
+        var resolver = EthereumAddress.Zero;
+        var uid = SchemaUID.FormatSchemaUID(schema, resolver, revocable);
+
+        var (record, wasFound) = await registry.TryGetSchemaAsync(context, uid);
+
+        Assert.IsTrue(wasFound, "Schema should be found");
+        Assert.IsNotNull(record, "Record should not be null");
+        Assert.AreEqual(schema, record.Schema, "Schema should match");
+        Assert.AreEqual(resolver, record.Resolver, "Resolver should match");
+        Assert.AreEqual(revocable, record.Revocable, "Revocable should match");
+
+        logger.LogInformation($"Successfully found schema by UID: {uid}");
+    }
+
+    [TestMethod]
+    public async Task Test_0_12_TryGetSchemaByUID_NonExistent_ReturnsFalse()
+    {
+        var context = EthereumTestContext.CreateHardhatContext(out var logger);
+        var registry = new SchemaRegistry(registryAddress);
+
+        // Create a random UID that won't exist
+        var randomUID = new Hex(Guid.NewGuid().ToByteArray());
+
+        var (record, wasFound) = await registry.TryGetSchemaAsync(context, randomUID);
+
+        Assert.IsFalse(wasFound, "Schema should not be found");
+        Assert.IsNotNull(record, "Record should not be null even when not found");
+        Assert.IsTrue(record.UID.IsEmpty() || record.UID.IsZeroValue(), "UID should be empty or zero for non-existent schema");
+
+        logger.LogInformation($"Successfully verified that non-existent UID returns wasFound=false");
     }
 }

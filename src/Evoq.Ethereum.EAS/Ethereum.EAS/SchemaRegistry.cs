@@ -77,9 +77,44 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
         var result = await schemaReg.CallAsync<SchemaRecordDTO>(
             "getSchema", context.Sender.SenderAccount.Address, args, context.CancellationToken);
 
-        result.UID = schemaUID;
+        // result.UID = schemaUID;
 
         return result;
+    }
+
+
+    /// <summary>
+    /// Attempts to get a schema from the registry
+    /// </summary>
+    /// <param name="context">The context to use for the interaction.</param>
+    /// <param name="schema">The schema string (e.g. "uint256 value, string name")</param>
+    /// <param name="resolver">The resolver address</param>
+    /// <param name="revocable">Whether the schema is revocable</param>
+    /// <returns>A tuple containing the schema record (if found) and a boolean indicating if it was found</returns>
+    public async Task<(ISchemaRecord Record, bool WasFound)> TryGetSchemaAsync(
+        InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
+    {
+        var record = await this.GetSchemaAsync(context, schema, resolver, revocable);
+
+        var wasFound = !record.UID.IsEmpty() && !record.UID.IsZeroValue();
+
+        return (record, wasFound);
+    }
+
+    /// <summary>
+    /// Attempts to get a schema from the registry using its UID
+    /// </summary>
+    /// <param name="context">The context to use for the interaction.</param>
+    /// <param name="schemaUID">The schema UID</param>
+    /// <returns>A tuple containing the schema record (if found) and a boolean indicating if it was found</returns>
+    public async Task<(ISchemaRecord Record, bool WasFound)> TryGetSchemaAsync(
+        InteractionContext context, Hex schemaUID)
+    {
+        var record = await GetSchemaAsync(context, schemaUID);
+
+        var wasFound = !record.UID.IsEmpty() && !record.UID.IsZeroValue();
+
+        return (record, wasFound);
     }
 
     /// <summary>
