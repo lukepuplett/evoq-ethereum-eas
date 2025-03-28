@@ -1,7 +1,4 @@
 using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
 using Evoq.Blockchain;
 using Evoq.Ethereum.ABI;
 using Evoq.Ethereum.Crypto;
@@ -18,7 +15,7 @@ public static class SchemaUID
     /// </summary>
     /// <param name="schema">The schema registration.</param>
     /// <returns>The schema UID</returns>
-    public static Hex FormatSchemaUID(SchemaRegistrationRequest schema)
+    public static Hex FormatSchemaUID(ISchemaDescription schema)
     {
         return FormatSchemaUID(schema.Schema, schema.Resolver, schema.Revocable);
     }
@@ -37,12 +34,7 @@ public static class SchemaUID
             throw new ArgumentException("Schema cannot be null or empty", nameof(schema));
         }
 
-        // Remove any surrounding brackets and trim whitespace
-        schema = schema.Trim();
-        if (schema.StartsWith("(") && schema.EndsWith(")"))
-        {
-            schema = schema[1..^1];
-        }
+        schema = NormalizeSchema(schema, false);
 
         var parameters = AbiParameters.Parse("(string schema, address resolver, bool revocable)");
         var values = AbiKeyValues.Create(
@@ -58,4 +50,20 @@ public static class SchemaUID
         return new Hex(uid);
     }
 
+    internal static string NormalizeSchema(string schema, bool withBrackets = false)
+    {
+        schema = schema.Trim();
+
+        if (schema.StartsWith("(") && schema.EndsWith(")"))
+        {
+            schema = schema[1..^1];
+        }
+
+        if (withBrackets)
+        {
+            schema = $"({schema})";
+        }
+
+        return schema;
+    }
 }

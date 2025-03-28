@@ -58,8 +58,8 @@ public static class EASExtensions
         EtherAmount value = default)
     {
         var schemaUID = SchemaUID.FormatSchemaUID(schema);
-
-        var parameters = AbiParameters.Parse(schema.Schema);
+        var sig = SchemaUID.NormalizeSchema(schema.Schema, true);
+        var parameters = AbiParameters.Parse(sig);
         var encoder = new AbiEncoder(context.Endpoint.LoggerFactory);
         var encoded = encoder.EncodeParameters(parameters, data);
 
