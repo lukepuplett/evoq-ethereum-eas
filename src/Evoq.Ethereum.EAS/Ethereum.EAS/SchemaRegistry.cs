@@ -15,7 +15,7 @@ namespace Evoq.Ethereum.EAS;
 /// <summary>
 /// A client for the EAS schema registry.
 /// </summary>
-public class SchemaRegistry : IGetSchema, IGetVersion
+public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="SchemaRegistry"/> class.
@@ -86,13 +86,15 @@ public class SchemaRegistry : IGetSchema, IGetVersion
     /// Registers a new schema on the registry
     /// </summary>
     /// <param name="context">The context to use for the interaction.</param>
-    /// <param name="schema">The schema string (e.g. "uint256 value, string name")</param>
-    /// <param name="resolver">Optional resolver contract address</param>
-    /// <param name="revocable">Whether attestations can be revoked</param>
+    /// <param name="request">The schema registration request.</param>
     /// <returns>The schema UID</returns>
     public async Task<TransactionResult<Hex>> RegisterAsync(
-        InteractionContext context, string schema, EthereumAddress? resolver = null, bool revocable = true)
+        InteractionContext context, ISchemaDescription request)
     {
+        var schema = request.Schema;
+        var resolver = request.Resolver.IsEmpty ? EthereumAddress.Zero : request.Resolver;
+        var revocable = request.Revocable;
+
         if (string.IsNullOrEmpty(schema))
         {
             throw new ArgumentException("Schema cannot be null or empty", nameof(schema));
@@ -108,7 +110,7 @@ public class SchemaRegistry : IGetSchema, IGetVersion
         var schemaReg = GetSchemaRegistryContract(context);
         var args = AbiKeyValues.Create(
             ("schema", schema),
-            ("resolver", resolver.GetValueOrDefault(EthereumAddress.Zero)),
+            ("resolver", resolver),
             ("revocable", revocable));
 
         var estimate = await schemaReg.EstimateTransactionFeeAsync(
@@ -121,7 +123,7 @@ public class SchemaRegistry : IGetSchema, IGetVersion
         var receipt = await runner.RunTransactionAsync(
             schemaReg, "register", options, args, context.CancellationToken);
 
-        var computedUID = SchemaUID.FormatSchemaUID(schema, resolver.GetValueOrDefault(EthereumAddress.Zero), revocable);
+        var computedUID = SchemaUID.FormatSchemaUID(schema, resolver, revocable);
 
         return new TransactionResult<Hex>(receipt, computedUID);
     }

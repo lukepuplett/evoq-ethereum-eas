@@ -44,26 +44,26 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var eas = GetEASContract(context);
 
         var attestationRequestData = AbiKeyValues.Create(
-            ("recipient", request.Data.Recipient),
-            ("expirationTime", request.Data.ExpirationTime.ToUniversalTime().ToUnixTimestamp()),
-            ("revocable", request.Data.Revocable),
-            ("refUID", request.Data.RefUID),
-            ("data", request.Data.Data),
-            ("value", request.Data.Value.WeiValue)
+            ("recipient", request.RequestData.Recipient),
+            ("expirationTime", request.RequestData.ExpirationTime.ToUniversalTime().ToUnixTimestamp()),
+            ("revocable", request.RequestData.Revocable),
+            ("refUID", request.RequestData.RefUID),
+            ("data", request.RequestData.Data),
+            ("value", request.RequestData.Value.WeiValue)
         );
 
         var attestationRequest = AbiKeyValues.Create(
-            ("schema", request.Schema),
+            ("schema", request.SchemaUID),
             ("data", attestationRequestData)
         );
 
         var arguments = AbiKeyValues.Create(("request", attestationRequest));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "attest", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), arguments, context.CancellationToken);
+            "attest", context.Sender.SenderAccount.Address, request.RequestData.Value.ToWei(), arguments, context.CancellationToken);
 
         var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, request.Data.Value);
+        var options = new ContractInvocationOptions(gas, request.RequestData.Value);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
 
         var receipt = await runner.RunTransactionAsync(

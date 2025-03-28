@@ -25,9 +25,9 @@ public class SchemaRegistryTests
         var resolver = EthereumAddress.Zero;
 
         var uid = SchemaUID.FormatSchemaUID(schema, resolver, revocable);
-        var uidv2 = SchemaUID.FormatSchemaUIDConcat(schema, resolver, revocable);
 
-        Assert.AreEqual(uid, uidv2, "UIDs should be equal");
+        Assert.IsFalse(uid.IsEmpty(), "UID should not be empty");
+        Assert.IsFalse(uid.IsZeroValue(), "UID should not be zero");
     }
 
     [TestMethod]

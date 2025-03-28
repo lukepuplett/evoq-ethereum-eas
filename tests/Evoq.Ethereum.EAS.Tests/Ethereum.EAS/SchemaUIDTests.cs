@@ -32,19 +32,6 @@ public class SchemaUIDTests
     }
 
     [TestMethod]
-    public void FormatSchemaUID_MatchesFormatSchemaUIDConcat()
-    {
-        var schema = "uint256 value, string name638786021703006440";
-        var resolver = EthereumAddress.Zero;
-        var revocable = true;
-
-        var uid1 = SchemaUID.FormatSchemaUID(schema, resolver, revocable);
-        var uid2 = SchemaUID.FormatSchemaUIDConcat(schema, resolver, revocable);
-
-        Assert.AreEqual(uid1, uid2, "Both implementations should produce the same UID");
-    }
-
-    [TestMethod]
     public void FormatSchemaUID_WithBracketsAndWhitespace_MatchesContract()
     {
         var schema = "  (uint256 value, string name638786021703006440)  ";

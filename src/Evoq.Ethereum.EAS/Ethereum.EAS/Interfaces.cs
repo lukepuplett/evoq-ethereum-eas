@@ -9,15 +9,36 @@ namespace Evoq.Ethereum.EAS;
 // main SchemaRegistry interfaces
 
 /// <summary>
-/// A schema record returned by the schema registry contract.
+/// A request to register a schema.
 /// </summary>
-public interface ISchemaRecord
+/// <param name="Schema">The schema to register.</param>
+/// <param name="Resolver">The resolver address of the schema.</param>
+/// <param name="Revocable">Whether the schema is revocable.</param>
+public record struct SchemaRegistrationRequest(
+    string Schema,
+    EthereumAddress Resolver = default,
+    bool Revocable = true
+) : ISchemaDescription;
+
+/// <summary>
+/// An interface for registering a schema.
+/// </summary>
+public interface IRegisterSchema
 {
     /// <summary>
-    /// The UID of the schema.
+    /// Register a new schema.
     /// </summary>
-    Hex UID { get; }
+    /// <param name="context">The interaction context.</param>
+    /// <param name="request">The details of the schema to register.</param>
+    /// <returns>The transaction result containing the UID of the schema.</returns>
+    Task<TransactionResult<Hex>> RegisterAsync(InteractionContext context, ISchemaDescription request);
+}
 
+/// <summary>
+/// A description of a schema.
+/// </summary>
+public interface ISchemaDescription
+{
     /// <summary>
     /// The resolver address of the schema.
     /// </summary>
@@ -32,6 +53,17 @@ public interface ISchemaRecord
     /// The schema string.
     /// </summary>
     string Schema { get; }
+}
+
+/// <summary>
+/// A schema record returned by the schema registry contract.
+/// </summary>
+public interface ISchemaRecord : ISchemaDescription
+{
+    /// <summary>
+    /// The UID of the schema.
+    /// </summary>
+    Hex UID { get; }
 }
 
 /// <summary>
@@ -53,11 +85,11 @@ public interface IGetSchema
 /// <summary>
 /// A request to attest to an EAS schema.
 /// </summary>
-/// <param name="Schema">The UID of the schema to attest to.</param>
-/// <param name="Data">The data to attest to.</param>
+/// <param name="SchemaUID">The UID of the schema to attest to.</param>
+/// <param name="RequestData">The data to attest to.</param>
 public record struct AttestationRequest(
-    Hex Schema,
-    AttestationRequestData Data
+    Hex SchemaUID,
+    AttestationRequestData RequestData
 );
 
 /// <summary>
@@ -75,7 +107,7 @@ public record struct AttestationRequestData(
     bool Revocable,                     // Whether the attestation is revocable.
     Hex RefUID,                         // The UID of a related attestation.
     Hex Data,                           // Custom attestation data.
-    EtherAmount Value                    // An explicit Eth amount to send to the resolver.
+    EtherAmount Value                   // An explicit Eth amount to send to the resolver.
 );
 
 /// <summary>
