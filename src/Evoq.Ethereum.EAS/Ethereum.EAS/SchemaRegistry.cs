@@ -151,9 +151,12 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
         var estimate = await schemaReg.EstimateTransactionFeeAsync(
             "register", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
 
-        var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
 
         var receipt = await runner.RunTransactionAsync(
             schemaReg, "register", options, args, context.CancellationToken);

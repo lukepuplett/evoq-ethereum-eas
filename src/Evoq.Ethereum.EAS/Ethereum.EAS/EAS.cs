@@ -62,9 +62,12 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var estimate = await eas.EstimateTransactionFeeAsync(
             "attest", context.Sender.SenderAccount.Address, request.RequestData.Value.ToWei(), arguments, context.CancellationToken);
 
-        var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, request.RequestData.Value);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, request.RequestData.Value)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
 
         var receipt = await runner.RunTransactionAsync(
             eas, "attest", options, arguments, context.CancellationToken);
@@ -132,9 +135,12 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var estimate = await eas.EstimateTransactionFeeAsync(
             "revoke", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), args, context.CancellationToken);
 
-        var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, request.Data.Value);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, request.Data.Value)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
 
         var receipt = await runner.RunTransactionAsync(
             eas, "revoke", options, args, context.CancellationToken);
@@ -163,9 +169,12 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var estimate = await eas.EstimateTransactionFeeAsync(
             "timestamp", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
 
-        var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
 
         var receipt = await runner.RunTransactionAsync(
             eas, "timestamp", options, args, context.CancellationToken);
@@ -214,9 +223,12 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var estimate = await eas.EstimateTransactionFeeAsync(
             "multiTimestamp", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
 
-        var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
 
         var receipt = await runner.RunTransactionAsync(
             eas, "multiTimestamp", options, args, context.CancellationToken);
@@ -296,14 +308,18 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var estimate = await eas.EstimateTransactionFeeAsync(
             "revokeOffchain", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
 
-        var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
+        var gas = context.FeeEstimateToGasOptions(estimate);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
 
         var receipt = await runner.RunTransactionAsync(
             eas, "revokeOffchain", options, args, context.CancellationToken);
 
         var timestamp = await GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
+
         return new TransactionResult<DateTimeOffset>(receipt, timestamp);
     }
 
@@ -318,7 +334,11 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
             "multiRevokeOffchain", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
 
         var gas = context.FeeEstimateToGasOptions(estimate);
-        var options = new ContractInvocationOptions(gas, EtherAmount.Zero);
+        var options = new ContractInvocationOptions(gas, EtherAmount.Zero)
+        {
+            WaitForReceiptTimeout = context.WaitForReceiptTimeout
+        };
+
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
 
         var receipt = await runner.RunTransactionAsync(
@@ -326,6 +346,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
 
         // Get the timestamp from the first piece of data
         var timestamp = await GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data[0]);
+
         return new TransactionResult<DateTimeOffset>(receipt, timestamp);
     }
 
