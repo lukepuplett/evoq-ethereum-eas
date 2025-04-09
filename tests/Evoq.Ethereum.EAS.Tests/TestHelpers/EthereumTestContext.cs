@@ -28,7 +28,7 @@ public static class EthereumTestContext
         var endpoint = new Endpoint(ChainNames.Hardhat, ChainNames.Hardhat, "http://localhost:8545", loggerFactory);
 
         var chain = endpoint.CreateChain();
-        var getTransactionCount = () => chain.GetTransactionCountAsync(address, "latest");
+        var getTransactionCount = () => chain.GetTransactionCountAsync(new JsonRpcContext(), address, "latest");
 
         var nonces = new InMemoryNonceStore(loggerFactory, getTransactionCount);
 

@@ -60,7 +60,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var arguments = AbiKeyValues.Create(("request", attestationRequest));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "attest", context.Sender.SenderAccount.Address, request.RequestData.Value.ToWei(), arguments, context.CancellationToken);
+            context, "attest", context.Sender.SenderAccount.Address, request.RequestData.Value.ToWei(), arguments);
 
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
         var gas = context.FeeEstimateToGasOptions(estimate);
@@ -70,7 +70,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         };
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "attest", options, arguments, context.CancellationToken);
+            context, eas, "attest", options, arguments);
 
         // Get UID from event logs
         if (!eas.TryReadEventLogsFromReceipt(receipt, "Attested", out var _, out var attested))
@@ -133,7 +133,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var args = AbiKeyValues.Create(("request", req));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "revoke", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), args, context.CancellationToken);
+            context, "revoke", context.Sender.SenderAccount.Address, request.Data.Value.ToWei(), args);
 
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
         var gas = context.FeeEstimateToGasOptions(estimate);
@@ -143,7 +143,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         };
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "revoke", options, args, context.CancellationToken);
+            context, eas, "revoke", options, args);
 
         // Wait for the receipt and check for the Revoked event
         if (!eas.TryReadEventLogsFromReceipt(receipt, "Revoked", out var _, out var revoked))
@@ -167,7 +167,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var args = AbiKeyValues.Create(("data", data));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "timestamp", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+            context, "timestamp", context.Sender.SenderAccount.Address, null, args);
 
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
         var gas = context.FeeEstimateToGasOptions(estimate);
@@ -177,7 +177,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         };
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "timestamp", options, args, context.CancellationToken);
+            context, eas, "timestamp", options, args);
 
         // Get timestamp from event logs
         if (!eas.TryReadEventLogsFromReceipt(receipt, "Timestamped", out var timestamped, out var _))
@@ -221,7 +221,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var args = AbiKeyValues.Create(("data", data));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "multiTimestamp", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+            context, "multiTimestamp", context.Sender.SenderAccount.Address, null, args);
 
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
         var gas = context.FeeEstimateToGasOptions(estimate);
@@ -231,7 +231,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         };
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "multiTimestamp", options, args, context.CancellationToken);
+            context, eas, "multiTimestamp", options, args);
 
         // Get timestamp from event logs
         if (!eas.TryReadEventLogsFromReceipt(receipt, "Timestamped", out var timestamped, out var _))
@@ -274,10 +274,10 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var eas = GetEASContract(context);
 
         var dic = await eas.CallAsync(
+            context,
             "getTimestamp",
             context.Sender.SenderAccount.Address,
-            AbiKeyValues.Create(("data", data)),
-            context.CancellationToken);
+            AbiKeyValues.Create(("data", data)));
 
         if (dic.Count != 1)
         {
@@ -306,7 +306,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var args = AbiKeyValues.Create(("data", data));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "revokeOffchain", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+            context, "revokeOffchain", context.Sender.SenderAccount.Address, null, args);
 
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
         var gas = context.FeeEstimateToGasOptions(estimate);
@@ -316,7 +316,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         };
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "revokeOffchain", options, args, context.CancellationToken);
+            context, eas, "revokeOffchain", options, args);
 
         var timestamp = await GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data);
 
@@ -331,7 +331,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var args = AbiKeyValues.Create(("data", data));
 
         var estimate = await eas.EstimateTransactionFeeAsync(
-            "multiRevokeOffchain", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+            context, "multiRevokeOffchain", context.Sender.SenderAccount.Address, null, args);
 
         var gas = context.FeeEstimateToGasOptions(estimate);
         var options = new ContractInvocationOptions(gas, EtherAmount.Zero)
@@ -342,7 +342,7 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
 
         var receipt = await runner.RunTransactionAsync(
-            eas, "multiRevokeOffchain", options, args, context.CancellationToken);
+            context, eas, "multiRevokeOffchain", options, args);
 
         // Get the timestamp from the first piece of data
         var timestamp = await GetRevokeOffchainAsync(context, context.Sender.SenderAccount.Address, data[0]);
@@ -357,12 +357,12 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var eas = GetEASContract(context);
 
         var dic = await eas.CallAsync(
+            context,
             "getRevokeOffchain",
             context.Sender.SenderAccount.Address,
             AbiKeyValues.Create(
                 ("revoker", revoker),
-                ("data", data)),
-            context.CancellationToken);
+                ("data", data)));
 
         if (dic.Count != 1)
         {
@@ -394,10 +394,10 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var eas = GetEASContract(context);
 
         var result = await eas.CallAsync<AttestationDTO>(
+            context,
             "getAttestation",
             context.Sender.SenderAccount.Address,
-            AbiKeyValues.Create(("uid", uid)),
-            context.CancellationToken);
+            AbiKeyValues.Create(("uid", uid)));
 
         return result;
     }
@@ -412,7 +412,10 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var args = AbiKeyValues.Create(("uid", uid));
 
         var dic = await eas.CallAsync(
-            "isAttestationValid", context.Sender.SenderAccount.Address, args, context.CancellationToken);
+            context,
+            "isAttestationValid",
+            context.Sender.SenderAccount.Address,
+            args);
 
         if (dic.Count != 1)
         {
@@ -438,10 +441,10 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
         var eas = GetEASContract(context);
 
         var result = await eas.CallAsync<EthereumAddress>(
+            context,
             "getSchemaRegistry",
             context.Sender.SenderAccount.Address,
-            AbiKeyValues.Create(),
-            context.CancellationToken);
+            AbiKeyValues.Create());
 
         return result;
     }

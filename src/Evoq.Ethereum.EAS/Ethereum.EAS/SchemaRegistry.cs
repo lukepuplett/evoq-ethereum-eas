@@ -75,7 +75,7 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
         var args = AbiKeyValues.Create(("uid", schemaUID));
 
         var result = await schemaReg.CallAsync<SchemaRecordDTO>(
-            "getSchema", context.Sender.SenderAccount.Address, args, context.CancellationToken);
+            context, "getSchema", context.Sender.SenderAccount.Address, args);
 
         // result.UID = schemaUID;
 
@@ -149,7 +149,7 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
             ("revocable", revocable));
 
         var estimate = await schemaReg.EstimateTransactionFeeAsync(
-            "register", context.Sender.SenderAccount.Address, null, args, context.CancellationToken);
+            context, "register", context.Sender.SenderAccount.Address, null, args);
 
         var runner = new TransactionRunnerNative(context.Sender, context.Endpoint.LoggerFactory);
         var gas = context.FeeEstimateToGasOptions(estimate);
@@ -159,7 +159,7 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
         };
 
         var receipt = await runner.RunTransactionAsync(
-            schemaReg, "register", options, args, context.CancellationToken);
+            context, schemaReg, "register", options, args);
 
         var computedUID = SchemaUID.FormatSchemaUID(schema, resolver, revocable);
 
@@ -175,10 +175,10 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
     {
         var schemaReg = GetSchemaRegistryContract(context);
         var result = await schemaReg.CallAsync(
+            context,
             "version",
             context.Sender.SenderAccount.Address,
-            AbiKeyValues.Create(),
-            context.CancellationToken);
+            AbiKeyValues.Create());
 
         if (!result.TryFirst(out var first))
         {
