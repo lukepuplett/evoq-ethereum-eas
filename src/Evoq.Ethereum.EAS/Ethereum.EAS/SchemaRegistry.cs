@@ -205,6 +205,18 @@ public class SchemaRegistry : IGetSchema, IGetVersion, IRegisterSchema
 
     //
 
+    /// <summary>
+    /// Gets an instance of the schema registry contract for the specified chain.
+    /// </summary>
+    /// <param name="chainId">The chain ID</param>
+    /// <returns>An instance of the schema registry contract</returns>
+    /// <exception cref="ArgumentException">Thrown when the chain ID is not supported</exception>
+    public static SchemaRegistry GetContract(string chainId)
+    {
+        return new SchemaRegistry(Contracts.GetSchemaRegistryAddress(chainId));
+    }
+
+    //
     private Contract GetSchemaRegistryContract(InteractionContext context)
     {
         var networkId = ChainNames.GetChainId(context.Endpoint.NetworkName);

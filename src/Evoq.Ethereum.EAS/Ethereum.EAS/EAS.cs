@@ -451,6 +451,19 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
 
     //
 
+    /// <summary>
+    /// Gets an instance of the EAS contract for the specified chain.
+    /// </summary>
+    /// <param name="chainId">The chain ID</param>
+    /// <returns>An instance of the EAS contract</returns>
+    /// <exception cref="ArgumentException">Thrown when the chain ID is not supported</exception>
+    public static EAS GetContract(string chainId)
+    {
+        return new EAS(Contracts.GetEASAddress(chainId));
+    }
+
+    //
+
     private Contract GetEASContract(InteractionContext context)
     {
         var networkId = ChainNames.GetChainId(context.Endpoint.NetworkName);
