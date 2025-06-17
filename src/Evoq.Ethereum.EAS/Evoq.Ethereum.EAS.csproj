@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <Version>3.1.0</Version>
+    <Version>3.2.0</Version>
     <Authors>Luke Puplett</Authors>
     <Description>Easy to use implementation of the Ethereum Attestation Service</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -17,8 +17,14 @@
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <!-- Version range syntax: [min,max)
+         [ = inclusive minimum
+         ) = exclusive maximum
+         Examples:
+         [1.0.9,1.1) = 1.0.9 and above, but below 1.1.0
+         [3.1.0,3.3.0) = 3.1.0 and above, but below 3.3.0 -->
     <PackageReference Include="Evoq.Blockchain" Version="[1.0.9,1.1)" />
-    <PackageReference Include="Evoq.Ethereum" Version="[3.1.0,3.2)" />
+    <PackageReference Include="Evoq.Ethereum" Version="[3.1.0,3.3.0)" />
   </ItemGroup>
 
   <ItemGroup>
