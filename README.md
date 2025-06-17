@@ -298,3 +298,43 @@ Luke Puplett
 
 - [GitHub Repository](https://github.com/lukepuplett/evoq-ethereum-eas)
 - [NuGet Package](https://www.nuget.org/packages/Evoq.Ethereum.EAS)
+
+## Deploying EAS Contracts
+
+For detailed instructions on deploying the Ethereum Attestation Service (EAS) contracts to a local Hardhat node, please refer to the [Evoq.Ethereum README](../evoq-ethereum/README.md#local-development-with-hardhat-and-eas). The instructions include:
+
+1. Setting up the EAS contracts repository
+2. Installing dependencies with pnpm
+3. Creating and running the deployment script
+4. Verifying the deployment
+
+The deployment process uses Hardhat Ignition for contract deployment and requires a local Hardhat node to be running.
+
+**Note:** Many tests in this repository depend on having a local Hardhat node running and the EAS contracts deployed. Be sure to complete the deployment steps before running the test suite.
+
+**Address Change Warning:**
+Each time you redeploy the EAS contracts to Hardhat, the contract addresses may change. This happens because Hardhat assigns new addresses if you reset the node, change the deployment order, or use a different mnemonic. If the addresses change, you must update the test code (or configuration) with the new deployed addresses, otherwise the tests will fail to find the contracts.
+
+**How Contract Addresses Are Determined:**
+
+Ethereum contract addresses are not based on the hash of the contract code. Instead, when a contract is deployed, its address is determined by the deployer's address and their transaction nonce at the time of deployment:
+
+    address = keccak256(rlp.encode([deployer_address, deployer_nonce]))[12:]
+
+- If you redeploy, reset your node, or change the deployment order, the nonce changes, and so do the contract addresses.
+- The contract code (bytecode) does not affect the address.
+- This is why you may need to update the addresses in your test code after each deployment.
+
+**Hardhat Default Addresses:**
+
+When using the default Hardhat account (account #0) with a fresh node (all nonces = 0), the contract addresses are deterministic:
+- SchemaRegistry (deployed first, nonce 0): `0x5FbDB2315678afecb367f032d93F642f64180aa3`
+- EAS (deployed second, nonce 1): `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`
+
+These addresses are hardcoded in `Contracts.cs` because they are predictable in this specific scenario. However, if you:
+1. Use a different deployer account
+2. Deploy in a different order
+3. Have any transactions before deployment
+4. Don't reset your node first
+
+Then you'll get different addresses and will need to update your test code accordingly.

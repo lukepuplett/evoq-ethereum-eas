@@ -452,6 +452,18 @@ public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
     //
 
     /// <summary>
+    /// Checks if the contract is deployed at the specified address
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <returns>True if the contract is deployed, false otherwise.</returns>
+    public async Task<bool> IsDeployedAsync(InteractionContext context)
+    {
+        var chain = context.Endpoint.CreateChain();
+        var code = await chain.GetCodeAsync(new JsonRpcContext(), this.ContractAddress, "latest");
+        return !string.IsNullOrEmpty(code.ToString()) && code.ToString() != "0x";
+    }
+
+    /// <summary>
     /// Gets an instance of the EAS contract for the specified chain.
     /// </summary>
     /// <param name="chainId">The chain ID</param>

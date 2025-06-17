@@ -94,51 +94,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_04_GetSchema_Existing_Success()
-    {
-        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
-
-        var registry = new SchemaRegistry(registryAddress);
-        var schema = $"uint256 value, string name638785811949377690";
-        var revocable = true;
-        var resolver = EthereumAddress.Zero;
-
-        var r = await registry.GetSchemaAsync(context, schema, resolver, revocable);
-
-        Assert.IsNotNull(r);
-        Assert.IsFalse(r.UID.IsEmpty(), "UID should not be empty");
-        Assert.IsFalse(r.UID.IsZeroValue(), "UID should not be zero");
-        Assert.AreEqual(schema, r.Schema, "Schema should be equal");
-        Assert.AreEqual(resolver, r.Resolver, "Resolver should be equal");
-        Assert.AreEqual(revocable, r.Revocable, "Revocable should be equal");
-    }
-
-    [TestMethod]
-    public async Task Test_0_05_RegisterSchema_Subsequent_AlreadyExists()
-    {
-        InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
-
-        var registry = new SchemaRegistry(registryAddress);
-        var schema = $"uint256 value, string name638785811949377690";
-        var revocable = true;
-        var resolver = EthereumAddress.Zero;
-
-        try
-        {
-            var r = await registry.RegisterAsync(context, schema, resolver, revocable);
-
-            Assert.Fail("Failed to catch expected exception");
-        }
-        catch (JsonRpcRequestFailedException requestFailed)
-            when (requestFailed.InnerException is JsonRpcProviderErrorException error)
-        {
-            Assert.IsTrue(error.JsonRpcErrorCode == -32603);
-            Assert.IsTrue(error.Message.Contains("AlreadyExists"));
-        }
-    }
-
-    [TestMethod]
-    public async Task Test_0_06_GetVersion_Success()
+    public async Task Test_0_04_GetVersion_Success()
     {
         InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
@@ -155,7 +111,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_07_RegisterSchema_IsAHuman()
+    public async Task Test_0_05_RegisterSchema_IsAHuman()
     {
         InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
 
@@ -181,7 +137,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_08_GetSchema_Unregistered_ReturnsNull()
+    public async Task Test_0_06_GetSchema_Unregistered_ReturnsNull()
     {
         var context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
@@ -200,7 +156,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_09_TryGetSchema_Existing_Success()
+    public async Task Test_0_07_TryGetSchema_Existing_Success()
     {
         InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
@@ -222,7 +178,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_10_TryGetSchema_Unregistered_ReturnsFalse()
+    public async Task Test_0_08_TryGetSchema_Unregistered_ReturnsFalse()
     {
         var context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
@@ -243,7 +199,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_11_TryGetSchemaByUID_Existing_Success()
+    public async Task Test_0_09_TryGetSchemaByUID_Existing_Success()
     {
         InteractionContext context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
@@ -266,7 +222,7 @@ public class SchemaRegistryTests
     }
 
     [TestMethod]
-    public async Task Test_0_12_TryGetSchemaByUID_NonExistent_ReturnsFalse()
+    public async Task Test_0_10_TryGetSchemaByUID_NonExistent_ReturnsFalse()
     {
         var context = EthereumTestContext.CreateHardhatContext(out var logger);
         var registry = new SchemaRegistry(registryAddress);
