@@ -15,7 +15,7 @@ namespace Evoq.Ethereum.EAS;
 /// <summary>
 /// A client for the Ethereum Attestation Service (EAS) contract.
 /// </summary>
-public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain
+public class EAS : IAttest, IRevoke, ITimestamp, IRevokeOffchain, IGetAttestation
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="EAS"/> class.

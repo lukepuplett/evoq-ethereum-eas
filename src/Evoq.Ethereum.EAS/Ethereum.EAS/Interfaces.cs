@@ -313,3 +313,25 @@ public interface IGetVersion
     /// <returns>The semantic version information.</returns>
     Task<SemanticVersion> GetVersionAsync(InteractionContext context);
 }
+
+/// <summary>
+/// An interface for querying attestation data and validation.
+/// </summary>
+public interface IGetAttestation
+{
+    /// <summary>
+    /// Gets an attestation by its UID.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="uid">The UID of the attestation.</param>
+    /// <returns>The attestation data.</returns>
+    Task<IAttestation> GetAttestationAsync(InteractionContext context, Hex uid);
+
+    /// <summary>
+    /// Checks if an attestation is valid.
+    /// </summary>
+    /// <param name="context">The interaction context.</param>
+    /// <param name="uid">The UID of the attestation to validate.</param>
+    /// <returns>True if the attestation is valid, false otherwise.</returns>
+    Task<bool> IsAttestationValidAsync(InteractionContext context, Hex uid);
+}

@@ -36,8 +36,8 @@ The library follows a layered architecture:
 ### Core Components
 
 - **EAS Class** (`src/Evoq.Ethereum.EAS/Ethereum.EAS/EAS.cs`): Main client for EAS contract interactions
-  - Implements interfaces: IAttest, IRevoke, ITimestamp, IRevokeOffchain
-  - Handles attestation creation, revocation, timestamping operations
+  - Implements interfaces: IAttest, IRevoke, ITimestamp, IRevokeOffchain, IGetAttestation
+  - Handles attestation creation, revocation, timestamping, and querying operations
   - Manages transaction execution and event log parsing
 
 - **SchemaRegistry Class** (`src/Evoq.Ethereum.EAS/Ethereum.EAS/SchemaRegistry.cs`): Client for schema registry operations
