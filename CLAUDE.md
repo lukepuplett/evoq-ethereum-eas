@@ -77,6 +77,80 @@ dotnet test --logger "console;verbosity=detailed"
 ./publish.sh
 ```
 
+## Release Process
+
+### Semantic Versioning Guidelines
+
+Follow semantic versioning (MAJOR.MINOR.PATCH) for the `<Version>` property in the `.csproj` file:
+
+- **MAJOR**: Breaking API changes (e.g., removed methods, changed signatures, interface breaking changes)
+- **MINOR**: New features that are backward compatible (e.g., new methods, new interfaces, additional functionality)
+- **PATCH**: Bug fixes and improvements that are backward compatible
+
+### Version Release Steps
+
+1. **Pre-release Validation**:
+   ```bash
+   # Run all tests to ensure quality
+   dotnet test -c Release
+   
+   # Verify build succeeds
+   dotnet build -c Release
+   ```
+
+2. **Update Version Number**:
+   - Edit `src/Evoq.Ethereum.EAS/Evoq.Ethereum.EAS.csproj`
+   - Update the `<Version>3.2.1</Version>` property with the new version
+   - Current version: `3.3.1`
+
+3. **Commit Version Changes**:
+   ```bash
+   git add src/Evoq.Ethereum.EAS/Evoq.Ethereum.EAS.csproj
+   git commit -m "chore: Bump version to X.Y.Z"
+   ```
+
+4. **Tag the Release**:
+   ```bash
+   git tag -a vX.Y.Z -m "Release version X.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+5. **Build Package**:
+   ```bash
+   ./build.sh
+   ```
+   This creates the `.nupkg` file in the `./artifacts` directory.
+
+6. **Publish to NuGet** (choose one method):
+
+   **Option A: Automated Publishing**:
+   ```bash
+   # Set your NuGet API key
+   export NUGET_API_KEY="your-api-key-here"
+   ./publish.sh
+   ```
+
+   **Option B: Manual Publishing**:
+   - Navigate to [nuget.org](https://www.nuget.org/packages/manage/upload)
+   - Upload the `.nupkg` file from `./artifacts/Evoq.Ethereum.EAS.X.Y.Z.nupkg`
+   - Follow the web interface to complete publication
+
+7. **Post-release**:
+   - Verify the package appears on [NuGet.org](https://www.nuget.org/packages/Evoq.Ethereum.EAS)
+   - Check the specific version at: `https://www.nuget.org/packages/Evoq.Ethereum.EAS/X.Y.Z`
+   - Update any dependent projects or documentation as needed
+
+### Release Checklist
+
+- [ ] All tests pass (`dotnet test -c Release`)
+- [ ] Build succeeds (`dotnet build -c Release`) 
+- [ ] Version number updated in `.csproj`
+- [ ] Version change committed to git
+- [ ] Git tag created and pushed
+- [ ] Package built successfully (`./build.sh`)
+- [ ] Package published to NuGet (automated or manual)
+- [ ] Release verified on NuGet.org
+
 ### Test Environment Setup
 
 Tests require a local Hardhat node with EAS contracts deployed:
@@ -158,7 +232,7 @@ The library supports multiple networks through the ChainIds and ChainNames const
 ## Dependencies
 
 - **Evoq.Blockchain** [1.0.9,2.0.0): Core blockchain functionality
-- **Evoq.Ethereum** [3.1.0,3.3.0): Ethereum-specific implementations
+- **Evoq.Ethereum** [3.1.0,3.6.0): Ethereum-specific implementations
 - **System.Text.Json** 8.0.5: JSON serialization
 
 ## Important Notes
