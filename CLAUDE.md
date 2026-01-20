@@ -101,7 +101,7 @@ Follow semantic versioning (MAJOR.MINOR.PATCH) for the `<Version>` property in t
 2. **Update Version Number**:
    - Edit `src/Evoq.Ethereum.EAS/Evoq.Ethereum.EAS.csproj`
    - Update the `<Version>3.2.1</Version>` property with the new version
-   - Current version: `3.3.1`
+   - Current version: `3.3.2`
 
 3. **Commit Version Changes**:
    ```bash
