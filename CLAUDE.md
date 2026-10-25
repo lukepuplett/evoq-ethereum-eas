@@ -100,8 +100,8 @@ Follow semantic versioning (MAJOR.MINOR.PATCH) for the `<Version>` property in t
 
 2. **Update Version Number**:
    - Edit `src/Evoq.Ethereum.EAS/Evoq.Ethereum.EAS.csproj`
-   - Update the `<Version>3.2.1</Version>` property with the new version
-   - Current version: `3.3.2`
+   - Update the `<Version>` property with the new version
+   - Current version: `3.3.4`
 
 3. **Commit Version Changes**:
    ```bash
@@ -232,7 +232,7 @@ The library supports multiple networks through the ChainIds and ChainNames const
 ## Dependencies
 
 - **Evoq.Blockchain** [1.0.9,2.0.0): Core blockchain functionality
-- **Evoq.Ethereum** [3.1.0,3.6.0): Ethereum-specific implementations
+- **Evoq.Ethereum** [4.0.0,5.0.0): Ethereum-specific implementations
 - **System.Text.Json** 8.0.5: JSON serialization
 
 ## Important Notes
